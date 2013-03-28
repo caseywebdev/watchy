@@ -1,0 +1,38 @@
+#!/usr/bin/env node
+
+// Handle command line options.
+var optimist = require('optimist');
+var argv = optimist
+  .usage('Usage: $0 [-w paths,to,watch] -- command arg1 arg2...')
+  .options({
+    watch: {
+      alias: 'w',
+      type: 'string',
+      desc: 'A path or comma-separated paths to watch.',
+      'default': process.cwd()
+    }
+  })
+  .check(function () {
+    if (!optimist.argv._[0]) throw new Error('Please specify a command.');
+  })
+  .argv;
+
+// Require dependencies.
+var spawn = require('child_process').spawn;
+var watchr = require('watchr');
+
+// Define the callback listener.
+var command = argv._[0];
+var args = argv._.slice(1);
+var run = function () {
+  var child = spawn(command, args);
+  child.stdout.pipe(process.stdout);
+  child.stderr.pipe(process.stderr);
+  child.stdin.end();
+};
+
+// Run immediately.
+run();
+
+// Start watching.
+watchr.watch({paths: argv.watch.split(','), listener: run});
