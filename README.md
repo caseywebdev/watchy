@@ -1,7 +1,7 @@
 Watchy
 ===
 
-A companion executable for [Watchr](https://github.com/bevry/watchr) that lets you specify paths to watch for changes and run a command when there is a change.
+A companion executable for [Watchr](https://github.com/bevry/watchr) that lets you run a command when a file in the given path(s) changes.
 
 Install
 -------
