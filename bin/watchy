@@ -10,6 +10,24 @@ var argv = optimist
       type: 'string',
       desc: 'A path or comma-separated paths to watch.',
       'default': process.cwd()
+    },
+    signal: {
+      alias: 's',
+      type: 'string',
+      desc: 'Send a kill signal (SIGNIT, SIGQUIT, etc...) to the previously ' +
+        'spawned process when a new one is launched.'
+    },
+    verbose: {
+      alias: 'v',
+      'default': false,
+      type: 'boolean',
+      desc: 'Log process starts and error exits in stdout.'
+    },
+    growl: {
+      alias: 'g',
+      'default': false,
+      type: 'boolean',
+      desc: 'Use growl notifications for process starts and error exits.'
     }
   })
   .check(function () {
@@ -18,14 +36,47 @@ var argv = optimist
   .argv;
 
 // Require dependencies.
+require('colors').setTheme({info: 'grey', error: 'red', success: 'green'});
+var growl = require('growl');
 var spawn = require('child_process').spawn;
 var watchr = require('watchr');
 
+var verbose = argv.verbose;
+var alert = function (title, message, type) {
+  var name = 'watchy';
+  var image = (function () {
+    switch (type) {
+    case 'success':
+      return 'node_modules/mocha/images/ok.png';
+    case 'error':
+      return 'node_modules/mocha/images/error.png';
+    }
+  })();
+  if (argv.growl) growl(message, {title: title, name: name, image: image});
+  message = ('[' + name + '] ' + title.bold + ' ' + message)[type];
+  if (type === 'error') return console.error(message);
+  if (verbose) console.log(message);
+};
+
 // Define the callback listener.
+var signal = argv.signal;
 var command = argv._[0];
 var args = argv._.slice(1);
+var title = argv._.join(' ');
+var child;
 var run = function () {
-  var child = spawn(command, args);
+  if (child && signal) {
+    child.on('exit', run);
+    return child.kill(signal);
+  }
+  child = spawn(command, args);
+  if (verbose) alert(title, 'Spawning...', 'info');
+  child.on('exit', function () {
+    if (verbose && child.exitCode) {
+      alert(title, 'Exited with code ' + child.exitCode, 'error');
+    }
+    child = null;
+  });
   child.stdout.pipe(process.stdout);
   child.stderr.pipe(process.stderr);
   child.stdin.end();
