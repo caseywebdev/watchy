@@ -1,6 +1,6 @@
 {
   "name": "watchy",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": "Casey Foster <c@sey.me>",
   "licence": "MIT",
   "repository": {
@@ -14,7 +14,7 @@
     "colors": "x",
     "growl": "x",
     "optimist": "x",
-    "watchr": "2.3.3"
+    "watchr": "x"
   },
   "engines": {
     "node": "x",
