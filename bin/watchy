@@ -9,7 +9,17 @@ var argv = optimist
       alias: 'w',
       type: 'string',
       desc: 'A path or comma-separated paths to watch.',
-      'default': process.cwd()
+      default: process.cwd()
+    },
+    'ignore-paths': {
+      alias: 'i',
+      type: 'string',
+      desc: 'A path or comma-separated paths to ignore.'
+    },
+    'ignore-basenames': {
+      alias: 'I',
+      type: 'string',
+      desc: 'A basename regex to ignore (ie \\.css$).'
     },
     signal: {
       alias: 's',
@@ -19,13 +29,13 @@ var argv = optimist
     },
     verbose: {
       alias: 'v',
-      'default': false,
+      default: false,
       type: 'boolean',
       desc: 'Log process starts and error exits in stdout.'
     },
     growl: {
       alias: 'g',
-      'default': false,
+      default: false,
       type: 'boolean',
       desc: 'Use growl notifications for process starts and error exits.'
     }
@@ -86,4 +96,10 @@ var run = function () {
 run();
 
 // Start watching.
-watchr.watch({paths: argv.watch.split(','), listener: run});
+watchr.watch({
+  paths: argv.watch.split(','),
+  ignorePaths: argv['ignore-paths'] && argv['ignore-paths'].split(','),
+  ignoreCustomPatterns: argv['ignore-basenames'] &&
+    new RegExp(argv['ignore-basenames'], 'i'),
+  listener: run
+});
