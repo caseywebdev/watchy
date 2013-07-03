@@ -56,7 +56,6 @@ var growl = require('growl');
 var spawn = require('child_process').spawn;
 var watchr = require('watchr');
 
-var verbose = argv.verbose;
 var alert = function (title, message, type) {
   var name = 'watchy';
   var image = (function () {
@@ -70,7 +69,7 @@ var alert = function (title, message, type) {
   if (argv.growl) growl(message, {title: title, name: name, image: image});
   message = ('[' + name + '] ' + title.bold + ' ' + message)[type];
   if (type === 'error') return console.error(message);
-  if (verbose) console.log(message);
+  if (argv.verbose) console.log(message);
 };
 
 // Define the callback listener.
@@ -82,15 +81,15 @@ var keepAlive = argv['keep-alive'];
 var child;
 var run = function () {
   if (child && signal) {
-    if (!keepAlive) child.on('exit', run);
+    if (!keepAlive) child.on('close', run);
     return child.kill(signal);
   }
   child = spawn(command, args);
-  if (verbose) alert(title, 'Spawning...', 'info');
-  child.on('exit', function () {
-    if (verbose && child.exitCode) {
-      alert(title, 'Exited with code ' + child.exitCode, 'error');
-    }
+  alert(title, 'Spawning...', 'info');
+  child.on('close', function (code, signal) {
+    if (signal) alert(title, 'Killed with signal ' + signal, 'info');
+    if (code === 0) alert(title, 'Exited cleanly', 'info');
+    if (code) alert(title, 'Exited with error code ' + code, 'error');
     child = null;
     if (keepAlive) run();
   });
