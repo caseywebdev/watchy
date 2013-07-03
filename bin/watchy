@@ -8,8 +8,7 @@ var argv = optimist
     watch: {
       alias: 'w',
       type: 'string',
-      desc: 'A path or comma-separated paths to watch.',
-      default: process.cwd()
+      desc: 'A path or comma-separated paths to watch.'
     },
     'ignore-paths': {
       alias: 'i',
@@ -83,7 +82,7 @@ var keepAlive = argv['keep-alive'];
 var child;
 var run = function () {
   if (child && signal) {
-    child.on('exit', run);
+    if (!keepAlive) child.on('exit', run);
     return child.kill(signal);
   }
   child = spawn(command, args);
@@ -103,11 +102,13 @@ var run = function () {
 // Run immediately.
 run();
 
-// Start watching.
-watchr.watch({
-  paths: argv.watch.split(','),
-  ignorePaths: argv['ignore-paths'] && argv['ignore-paths'].split(','),
-  ignoreCustomPatterns: argv['ignore-basenames'] &&
-    new RegExp(argv['ignore-basenames'], 'i'),
-  listener: run
-});
+// Start watching if paths are specified.
+if (argv.watch) {
+  watchr.watch({
+    paths: argv.watch.split(','),
+    ignorePaths: argv['ignore-paths'] && argv['ignore-paths'].split(','),
+    ignoreCustomPatterns: argv['ignore-basenames'] &&
+      new RegExp(argv['ignore-basenames'], 'i'),
+    listener: run
+  });
+}
