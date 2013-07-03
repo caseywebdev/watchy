@@ -80,9 +80,12 @@ var title = argv._.join(' ');
 var keepAlive = argv['keep-alive'];
 var child;
 var run = function () {
-  if (child && signal) {
-    if (!keepAlive) child.on('close', run);
-    return child.kill(signal);
+  if (child) {
+    if (child.dying) return;
+    child.dying = true;
+    child.rerun = true;
+    if (signal) child.kill(signal);
+    return;
   }
   child = spawn(command, args);
   alert(title, 'Spawning...', 'info');
@@ -90,8 +93,9 @@ var run = function () {
     if (signal) alert(title, 'Killed with signal ' + signal, 'info');
     if (code === 0) alert(title, 'Exited cleanly', 'info');
     if (code) alert(title, 'Exited with error code ' + code, 'error');
+    var rerun = child.rerun || keepAlive;
     child = null;
-    if (keepAlive) run();
+    if (rerun) run();
   });
   child.stdout.pipe(process.stdout);
   child.stderr.pipe(process.stderr);
