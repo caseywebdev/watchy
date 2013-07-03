@@ -38,6 +38,12 @@ var argv = optimist
       default: false,
       type: 'boolean',
       desc: 'Use growl notifications for process starts and error exits.'
+    },
+    'keep-alive': {
+      alias: 'k',
+      default: false,
+      type: 'boolean',
+      desc: 'Restart the process if it exits. Useful for servers.'
     }
   })
   .check(function () {
@@ -73,6 +79,7 @@ var signal = argv.signal;
 var command = argv._[0];
 var args = argv._.slice(1);
 var title = argv._.join(' ');
+var keepAlive = argv['keep-alive'];
 var child;
 var run = function () {
   if (child && signal) {
@@ -86,6 +93,7 @@ var run = function () {
       alert(title, 'Exited with code ' + child.exitCode, 'error');
     }
     child = null;
+    if (keepAlive) run();
   });
   child.stdout.pipe(process.stdout);
   child.stderr.pipe(process.stderr);
