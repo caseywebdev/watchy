@@ -90,9 +90,9 @@ var run = function () {
   child = spawn(command, args);
   alert(title, 'Spawning...', 'info');
   child.on('close', function (code, signal) {
-    if (signal) alert(title, 'Killed with signal ' + signal, 'info');
+    if (signal) alert(title, 'Killed with ' + signal, 'info');
     if (code === 0) alert(title, 'Exited cleanly', 'info');
-    if (code) alert(title, 'Exited with error code ' + code, 'error');
+    if (code) alert(title, 'Exited with code ' + code, 'error');
     var rerun = child.rerun || keepAlive;
     child = null;
     if (rerun) run();
