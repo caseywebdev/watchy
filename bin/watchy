@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 
 // Handle command line options.
+var _ = require('underscore');
+var Log = require('../lib/log');
 var optimist = require('optimist');
+var Pheonix = require('../lib/pheonix');
+var watchr = require('watchr');
+
 var argv = optimist
   .usage('Usage: $0 [-w paths,to,watch] -- command arg1 arg2...')
   .options({
@@ -20,12 +25,6 @@ var argv = optimist
       type: 'string',
       desc: 'A basename regex to ignore (ie \\.css$).'
     },
-    signal: {
-      alias: 's',
-      type: 'string',
-      desc: 'Send a kill signal (SIGNIT, SIGQUIT, etc...) to the previously ' +
-        'spawned process when a new one is launched.'
-    },
     verbose: {
       alias: 'v',
       default: false,
@@ -43,6 +42,12 @@ var argv = optimist
       default: false,
       type: 'boolean',
       desc: 'Restart the process if it exits. Useful for servers.'
+    },
+    wait: {
+      alias: 'W',
+      default: 0,
+      type: 'number',
+      desc: 'Time (sec) to wait after sending SIGTERM to forcefully SIGKILL.'
     }
   })
   .check(function () {
@@ -50,60 +55,11 @@ var argv = optimist
   })
   .argv;
 
-// Require dependencies.
-require('colors').setTheme({info: 'grey', error: 'red', success: 'green'});
-var growl = require('growl');
-var spawn = require('child_process').spawn;
-var watchr = require('watchr');
-
-var alert = function (title, message, type) {
-  var name = 'watchy';
-  var image = (function () {
-    switch (type) {
-    case 'success':
-      return 'node_modules/mocha/images/ok.png';
-    case 'error':
-      return 'node_modules/mocha/images/error.png';
-    }
-  })();
-  if (argv.growl) growl(message, {title: title, name: name, image: image});
-  message = ('[' + name + '] ' + title.bold + ' ' + message)[type];
-  if (type === 'error') return console.error(message);
-  if (argv.verbose) console.log(message);
-};
-
-// Define the callback listener.
-var signal = argv.signal;
+var log = new Log(argv, _.pick(argv, 'verbose', 'growl'));
 var command = argv._[0];
 var args = argv._.slice(1);
-var title = argv._.join(' ');
-var keepAlive = argv['keep-alive'];
-var child;
-var run = function () {
-  if (child) {
-    if (child.dying) return;
-    child.dying = true;
-    child.rerun = true;
-    if (signal) child.kill(signal);
-    return;
-  }
-  child = spawn(command, args);
-  alert(title, 'Spawning...', 'info');
-  child.on('close', function (code, signal) {
-    if (signal) alert(title, 'Killed with ' + signal, 'info');
-    if (code === 0) alert(title, 'Exited cleanly', 'info');
-    if (code) alert(title, 'Exited with code ' + code, 'error');
-    var rerun = child.rerun || keepAlive;
-    child = null;
-    if (rerun) run();
-  });
-  child.stdout.pipe(process.stdout);
-  child.stderr.pipe(process.stderr);
-  child.stdin.end();
-};
-
-// Run immediately.
-run();
+var options = _.extend({log: log}, _.pick(argv, 'keep-alive', 'wait'));
+var pheonix = new Pheonix(command, args, options);
 
 // Start watching if paths are specified.
 if (argv.watch) {
@@ -112,6 +68,12 @@ if (argv.watch) {
     ignorePaths: argv['ignore-paths'] && argv['ignore-paths'].split(','),
     ignoreCustomPatterns: argv['ignore-basenames'] &&
       new RegExp(argv['ignore-basenames'], 'i'),
-    listener: run
+    listener: _.bind(pheonix.spawn, pheonix),
+    next: function (er, watchers) {
+      if (er) throw er;
+      process.on('SIGTERM', _.bind(_.invoke, _, watchers, 'close'));
+    }
   });
 }
+
+process.on('SIGTERM', _.bind(pheonix.killDead, pheonix));
