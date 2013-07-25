@@ -25,18 +25,6 @@ var argv = optimist
       type: 'string',
       desc: 'A basename regex to ignore (ie \\.css$).'
     },
-    verbose: {
-      alias: 'v',
-      default: false,
-      type: 'boolean',
-      desc: 'Log process starts and error exits in stdout.'
-    },
-    growl: {
-      alias: 'g',
-      default: false,
-      type: 'boolean',
-      desc: 'Use growl notifications for process starts and error exits.'
-    },
     'keep-alive': {
       alias: 'k',
       default: false,
