@@ -64,4 +64,4 @@ if (argv.watch) {
   });
 }
 
-process.on('SIGTERM', _.bind(pheonix.killDead, pheonix));
+process.on('SIGTERM', _.bind(pheonix.kill, pheonix, true));
