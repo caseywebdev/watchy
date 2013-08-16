@@ -46,7 +46,8 @@ var argv = optimist
 var log = new Log(argv, _.pick(argv, 'verbose', 'growl'));
 var command = argv._[0];
 var args = argv._.slice(1);
-var options = _.extend({log: log}, _.pick(argv, 'keep-alive', 'wait'));
+var options = _.extend({log: log}, _.pick(argv, 'wait'));
+if (argv['keep-alive']) options.keepAlive = true;
 var pheonix = new Pheonix(command, args, options);
 
 // Start watching if paths are specified.
