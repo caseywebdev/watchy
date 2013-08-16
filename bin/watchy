@@ -4,8 +4,9 @@
 var _ = require('underscore');
 var Log = require('../lib/log');
 var optimist = require('optimist');
+var path = require('path');
 var Pheonix = require('../lib/pheonix');
-var watchr = require('watchr');
+var chokidar = require('chokidar');
 
 var argv = optimist
   .usage('Usage: $0 [-w paths,to,watch] -- command arg1 arg2...')
@@ -15,15 +16,11 @@ var argv = optimist
       type: 'string',
       desc: 'A path or comma-separated paths to watch.'
     },
-    'ignore-paths': {
+    ignore: {
       alias: 'i',
+      default: '/\\.',
       type: 'string',
-      desc: 'A path or comma-separated paths to ignore.'
-    },
-    'ignore-basenames': {
-      alias: 'I',
-      type: 'string',
-      desc: 'A basename regex to ignore (ie \\.css$).'
+      desc: 'A regex of file paths to ignore.'
     },
     'keep-alive': {
       alias: 'k',
@@ -52,17 +49,16 @@ var pheonix = new Pheonix(command, args, options);
 
 // Start watching if paths are specified.
 if (argv.watch) {
-  watchr.watch({
-    paths: argv.watch.split(','),
-    ignorePaths: argv['ignore-paths'] && argv['ignore-paths'].split(','),
-    ignoreCustomPatterns: argv['ignore-basenames'] &&
-      new RegExp(argv['ignore-basenames'], 'i'),
-    listener: _.bind(pheonix.spawn, pheonix),
-    next: function (er, watchers) {
-      if (er) throw er;
-      process.on('SIGTERM', _.bind(_.invoke, _, watchers, 'close'));
-    }
-  });
+  var watcher = chokidar
+    .watch(_.map(argv.watch.split(','), function (p) {
+      return path.resolve(p);
+    }), {
+      ignored: new RegExp(argv.ignore),
+      ignoreInitial: true,
+      persistent: true
+    })
+    .on('all', _.bind(pheonix.spawn, pheonix));
+  process.on('SIGTERM', _.bind(watcher.close, watcher));
 }
 
 process.on('SIGTERM', _.bind(pheonix.kill, pheonix, true));
