@@ -33,6 +33,18 @@ var argv = optimist
       default: 0,
       type: 'number',
       desc: 'Time (sec) to wait after sending SIGTERM to forcefully SIGKILL.'
+    },
+    silent: {
+      alias: 's',
+      type: 'boolean',
+      desc: 'Silence watching info, errors will still output to stderr.',
+      default: false
+    },
+    'no-color': {
+      alias: 'n',
+      type: 'boolean',
+      desc: 'Do not color output.',
+      default: false
     }
   })
   .check(function () {
@@ -40,7 +52,8 @@ var argv = optimist
   })
   .argv;
 
-var log = new Log(argv, _.pick(argv, 'verbose', 'growl'));
+var log = new Log(argv, _.pick(argv, 'silent'));
+require('chalk').enabled = !argv['no-color'];
 var command = argv._[0];
 var args = argv._.slice(1);
 var options = _.extend({log: log}, _.pick(argv, 'wait'));
