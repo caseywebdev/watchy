@@ -54,11 +54,9 @@ var argv = optimist
 
 var log = new Log(argv, _.pick(argv, 'silent'));
 require('chalk').enabled = !argv['no-color'];
-var command = argv._[0];
-var args = argv._.slice(1);
 var options = _.extend({log: log}, _.pick(argv, 'wait'));
 if (argv['keep-alive']) options.keepAlive = true;
-var pheonix = new Pheonix(command, args, options);
+var pheonix = new Pheonix(argv._.join(' '), options);
 
 // Start watching if paths are specified.
 if (argv.watch) {
