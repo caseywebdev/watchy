@@ -45,15 +45,23 @@ var argv = optimist
       type: 'boolean',
       desc: 'Do not color output.',
       default: false
+    },
+    version: {
+      alias: 'v',
+      type: 'boolean',
+      desc: 'Display the version.'
     }
-  })
-  .check(function () {
-    if (!optimist.argv._[0]) throw new Error('Please specify a command.');
-  })
-  .argv;
+  }).argv;
 
 var log = new Log(argv, _.pick(argv, 'silent'));
 require('chalk').enabled = !argv['no-color'];
+if (argv.version) {
+  return log.info('Version', require('../package').version, 'info');
+} else if (!argv._[0]) {
+  optimist.showHelp();
+  log.error('Whoops!', 'Please specify a command.');
+  return process.exit(1);
+}
 var options = _.extend({log: log}, _.pick(argv, 'wait'));
 if (argv['keep-alive']) options.keepAlive = true;
 var pheonix = new Pheonix(argv._.join(' '), options);
