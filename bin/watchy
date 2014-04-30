@@ -30,7 +30,6 @@ var argv = optimist
     },
     wait: {
       alias: 'W',
-      default: 0,
       type: 'number',
       desc: 'Time (sec) to wait after sending SIGTERM to forcefully SIGKILL.'
     },
