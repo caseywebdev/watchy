@@ -9,7 +9,7 @@ var Pheonix = require('../lib/pheonix');
 var chokidar = require('chokidar');
 
 var argv = optimist
-  .usage('Usage: $0 [-w paths,to,watch] -- command arg1 arg2...')
+  .usage('Usage: $0 [options] -- command arg1 arg2...')
   .options({
     watch: {
       alias: 'w',
