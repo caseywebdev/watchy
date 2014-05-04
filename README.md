@@ -44,7 +44,7 @@ watchy -w . -i '/\.|/node_modules|\.json$' -- node server.js
 watchy -ks -- 'date | sleep 1'
 
 # Tick tock (annoying version)!
-watchy -ks -- '(date | say)'
+watchy -ks -- 'say "In case you were wondering, it is `date`" && sleep 5'
 ```
 
 > Note: If you're using `watchy` for help with preprocessing, I'd recommend
