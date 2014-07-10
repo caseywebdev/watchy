@@ -18,15 +18,15 @@ var argv = optimist
     },
     ignore: {
       alias: 'i',
-      default: '/\\.',
       type: 'string',
-      desc: 'A regex of file paths to ignore.'
+      desc: 'A regex of file paths to ignore.',
+      default: '/\\.'
     },
     'keep-alive': {
       alias: 'k',
-      default: false,
       type: 'boolean',
-      desc: 'Restart the process if it exits. Useful for servers.'
+      desc: 'Restart the process if it exits. Useful for servers.',
+      default: false
     },
     wait: {
       alias: 'W',
@@ -49,10 +49,17 @@ var argv = optimist
       alias: 'v',
       type: 'boolean',
       desc: 'Display the version.'
+    },
+    restart: {
+      alias: 'r',
+      type: 'string',
+      desc: 'Type this command to manually restart the process. ' +
+        'Set to - to disable.',
+      default: 'rs'
     }
   }).argv;
 
-var log = new Log(argv, _.pick(argv, 'silent'));
+var log = new Log(_.pick(argv, 'silent'));
 require('chalk').enabled = !argv['no-color'];
 if (argv.version) {
   return log.info('Version', require('../package').version, 'info');
@@ -61,7 +68,8 @@ if (argv.version) {
   log.error('Whoops!', 'Please specify a command.');
   return process.exit(1);
 }
-var options = _.extend({log: log}, _.pick(argv, 'wait'));
+var options = _.extend({log: log}, _.pick(argv, 'wait', 'restart'));
+options.restart = options.restart.trim();
 if (argv['keep-alive']) options.keepAlive = true;
 var pheonix = new Pheonix(argv._.join(' '), options);
 

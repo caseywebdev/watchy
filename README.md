@@ -15,12 +15,13 @@ Usage: watchy [options] -- command arg1 arg2...
 
 Options:
   --watch, -w       A path or comma-separated paths to watch.
-  --ignore, -i      A regex of file paths to ignore.                                 [default: "/\\."]
-  --keep-alive, -k  Restart the process if it exits. Useful for servers.             [default: false]
+  --ignore, -i      A regex of file paths to ignore.                                         [default: "/\\."]
+  --keep-alive, -k  Restart the process if it exits. Useful for servers.                     [default: false]
   --wait, -W        Time (sec) to wait after sending SIGTERM to forcefully SIGKILL.
-  --silent, -s      Silence watching info, errors will still output to stderr.       [default: false]
-  --no-color, -n    Do not color output.                                             [default: false]
+  --silent, -s      Silence watching info, errors will still output to stderr.               [default: false]
+  --no-color, -n    Do not color output.                                                     [default: false]
   --version, -v     Display the version.
+  --restart, -r     Type this command to manually restart the process. Set to - to disable.  [default: "rs"]
 ```
 
 ## Examples
