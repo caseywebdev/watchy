@@ -56,6 +56,12 @@ var argv = optimist
       desc: 'Type this command to manually restart the process. ' +
         'Set to - to disable.',
       default: 'rs'
+    },
+    help: {
+      alias: 'h',
+      type: 'boolean',
+      desc: 'Display this help message.',
+      default: false
     }
   }).argv;
 
@@ -63,6 +69,8 @@ var log = new Log(_.pick(argv, 'silent'));
 require('chalk').enabled = !argv['no-color'];
 if (argv.version) {
   return log.info('Version', require('../package').version, 'info');
+} else if (argv.help) {
+  return optimist.showHelp();
 } else if (!argv._[0]) {
   optimist.showHelp();
   log.error('Whoops!', 'Please specify a command.');
