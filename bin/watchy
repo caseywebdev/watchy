@@ -25,8 +25,7 @@ var argv = optimist
     'keep-alive': {
       alias: 'k',
       type: 'boolean',
-      desc: 'Restart the process if it exits. Useful for servers.',
-      default: false
+      desc: 'Restart the process if it exits. Useful for servers.'
     },
     wait: {
       alias: 'W',
@@ -36,14 +35,12 @@ var argv = optimist
     silent: {
       alias: 's',
       type: 'boolean',
-      desc: 'Silence watching info, errors will still output to stderr.',
-      default: false
+      desc: 'Silence watching info, errors will still output to stderr.'
     },
     'no-color': {
       alias: 'n',
       type: 'boolean',
-      desc: 'Do not color output.',
-      default: false
+      desc: 'Do not color output.'
     },
     version: {
       alias: 'v',
@@ -60,8 +57,7 @@ var argv = optimist
     help: {
       alias: 'h',
       type: 'boolean',
-      desc: 'Display this help message.',
-      default: false
+      desc: 'Display this help message.'
     }
   }).argv;
 
