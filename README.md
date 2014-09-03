@@ -4,9 +4,15 @@ A companion executable for [Chokidar](https://github.com/paulmillr/chokidar) tha
 
 ## Install
 
+You'll need to install [Node.js](http://nodejs.org) to use Watchy. Node comes
+packaged with [npm](https://www.npmjs.org), which is Node's package manager, and
+the preferred method of installing Watchy. After installing Node, simply type
+
 ```bash
-npm install [-g] watchy
+npm install -g watchy
 ```
+
+and you should have the `watchy` command available!
 
 ## Usage
 
