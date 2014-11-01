@@ -11,11 +11,11 @@
     "watchy": "bin/watchy"
   },
   "dependencies": {
-    "chalk": "0.5.1",
-    "chokidar": "0.8.2",
-    "herit": "2.2.2",
-    "optimist": "0.6.1",
-    "underscore": "1.6.0"
+    "chalk": "^0.5.1",
+    "chokidar": "^0.10.3",
+    "herit": "^2.2.2",
+    "optimist": "^0.6.1",
+    "underscore": "^1.6.0"
   },
   "engines": {
     "node": "x",
