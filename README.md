@@ -52,6 +52,10 @@ watchy -ks -- 'date && sleep 1'
 
 # Tick tock (annoying version)!
 watchy -ks -- 'say "In case you were wondering, it is `date`" && sleep 5'
+
+# $EVENT and $FILE are passed to the process from chokidar (thanks @remy).
+watchy -w . -- 'echo $EVENT $FILE'
+# => change /Users/casey/projects/watchy/README.md
 ```
 
 > Note: If you're using `watchy` for help with preprocessing, I'd recommend
