@@ -58,6 +58,11 @@ var argv = optimist
       alias: 'h',
       type: 'boolean',
       desc: 'Display this help message.'
+    },
+    'use-polling': {
+      alias: 'p',
+      type: 'boolean',
+      desc: 'Slower, but useful when watching over NFS.'
     }
   }).argv;
 
@@ -79,15 +84,20 @@ var pheonix = new Pheonix(argv._.join(' '), options);
 
 // Start watching if paths are specified.
 if (argv.watch) {
+  var resolve = function (p) { return path.resolve(p); };
+  var paths = _.map(argv.watch.split(','), resolve);
+
+  var watcherOptions = {
+    ignored: new RegExp(argv.ignore),
+    ignoreInitial: true,
+    persistent: true
+  };
+  if (argv['use-polling']) watcherOptions.usePolling = true;
+
   var watcher = chokidar
-    .watch(_.map(argv.watch.split(','), function (p) {
-      return path.resolve(p);
-    }), {
-      ignored: new RegExp(argv.ignore),
-      ignoreInitial: true,
-      persistent: true
-    })
+    .watch(paths, watcherOptions)
     .on('all', _.bind(pheonix.spawn, pheonix));
+
   process.on('SIGTERM', _.bind(watcher.close, watcher));
 }
 
