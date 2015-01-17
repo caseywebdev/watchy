@@ -16,9 +16,5 @@
     "herit": "2.2.2",
     "optimist": "0.6.1",
     "underscore": "1.7.0"
-  },
-  "engines": {
-    "node": "0.10.35",
-    "npm": "2.2.0"
   }
 }
