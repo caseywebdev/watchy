@@ -1,6 +1,6 @@
 {
   "name": "watchy",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "author": "Casey Foster <c@sey.me>",
   "licence": "MIT",
   "repository": {
@@ -11,14 +11,14 @@
     "watchy": "bin/watchy"
   },
   "dependencies": {
-    "chalk": "^0.5.1",
-    "chokidar": "^0.10.3",
-    "herit": "^2.2.2",
-    "optimist": "^0.6.1",
-    "underscore": "^1.6.0"
+    "chalk": "0.5.1",
+    "chokidar": "0.10.9",
+    "herit": "2.2.2",
+    "optimist": "0.6.1",
+    "underscore": "1.7.0"
   },
   "engines": {
-    "node": "x",
-    "npm": "x"
+    "node": "0.10.35",
+    "npm": "2.2.0"
   }
 }
