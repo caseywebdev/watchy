@@ -37,7 +37,7 @@ Options:
 watchy -w lib -- say "The lib directory changed."
 
 # Piping works as well
-watchy -w styles -- "lessc styles/main.less | autoprefixer -o .tmp/styles/main.css"
+watchy -w styles -- bash -c "lessc styles/main.less | autoprefixer -o .tmp/styles/main.css"
 
 # Keep a process alive, restarting it as soon as it exits or "server.js"
 # changes.
@@ -48,13 +48,13 @@ watchy -kw server.js -- node server.js
 watchy -w . -i '/\.|/node_modules|\.json$' -- node server.js
 
 # Tick tock!
-watchy -ks -- 'date && sleep 1'
+watchy -ks -- bash -c 'date && sleep 1'
 
 # Tick tock (annoying version)!
-watchy -ks -- 'say "In case you were wondering, it is `date`" && sleep 5'
+watchy -ks -- bash -c 'say "In case you were wondering, it is `date`" && sleep 5'
 
 # $EVENT and $FILE are passed to the process from chokidar (thanks @remy).
-watchy -w . -- 'echo $EVENT $FILE'
+watchy -w . -- bash -c 'echo $EVENT $FILE'
 # => change /Users/casey/projects/watchy/README.md
 ```
 

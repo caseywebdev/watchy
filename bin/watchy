@@ -80,7 +80,7 @@ if (argv.version) {
 var options = _.extend({log: log}, _.pick(argv, 'wait', 'restart'));
 options.restart = options.restart.trim();
 if (argv['keep-alive']) options.keepAlive = true;
-var pheonix = new Pheonix(argv._.join(' '), options);
+var pheonix = new Pheonix(argv._[0], _.rest(argv._), options);
 
 // Start watching if paths are specified.
 if (argv.watch) {
