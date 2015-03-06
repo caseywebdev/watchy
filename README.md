@@ -1,6 +1,6 @@
 # Watchy
 
-A companion executable for [Chokidar](https://github.com/paulmillr/chokidar) that lets you run a command when a file in the given path(s) changes.
+Run commands when paths change.
 
 ## Install
 
