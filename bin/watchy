@@ -25,6 +25,7 @@ argv
   .option('-W, --wait [sec]', 'time after SIGTERM to SIGKILL', parseFloat)
   .option('-s, --silent', 'be quieter, only output errors')
   .option('-n, --no-color', 'disable colored output')
+  .option('-S, --no-init-spawn', 'prevent spawn when the watcher is created')
   .option(
     '-r, --restart [string] [default rs]',
     'enter this command to manually restart the process. Set to - to disable.',
@@ -44,7 +45,7 @@ if (!command) {
 }
 var options = _.extend(
   {log: log},
-  _.pick(argv, 'wait', 'restart', 'keepAlive')
+  _.pick(argv, 'wait', 'restart', 'keepAlive', 'initSpawn')
 );
 var pheonix = new Pheonix(command, _.rest(argv.args), options);
 
