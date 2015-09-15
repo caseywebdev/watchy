@@ -33,7 +33,6 @@ argv
   .option('-p, --use-polling', 'slower, but useful when watching over NFS')
   .parse(process.argv);
 
-require('chalk').enabled = !argv['no-color'];
 var command = log.config.name = _.first(argv.args);
 log.config.colors = argv.color;
 if (argv.silent) log.config.level = 'error';
