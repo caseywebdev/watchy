@@ -1,101 +1,63 @@
 #!/usr/bin/env node
 
-// Handle command line options.
-var _ = require('underscore');
-var Log = require('../lib/log');
-var optimist = require('optimist');
-var path = require('path');
+var log = require('orgsync-logger');
 var Pheonix = require('../lib/pheonix');
+var _ = require('underscore');
+var argv = require('commander');
 var chokidar = require('chokidar');
+var path = require('path');
 
-var argv = optimist
-  .usage('Usage: $0 [options] -- command arg1 arg2...')
-  .options({
-    watch: {
-      alias: 'w',
-      type: 'string',
-      desc: 'A path or comma-separated paths to watch.'
-    },
-    ignore: {
-      alias: 'i',
-      type: 'string',
-      desc: 'A regex of file paths to ignore.',
-      default: '/\\.'
-    },
-    'keep-alive': {
-      alias: 'k',
-      type: 'boolean',
-      desc: 'Restart the process if it exits. Useful for servers.'
-    },
-    wait: {
-      alias: 'W',
-      type: 'number',
-      desc: 'Time (sec) to wait after sending SIGTERM to forcefully SIGKILL.'
-    },
-    silent: {
-      alias: 's',
-      type: 'boolean',
-      desc: 'Silence watching info, errors will still output to stderr.'
-    },
-    'no-color': {
-      alias: 'n',
-      type: 'boolean',
-      desc: 'Do not color output.'
-    },
-    version: {
-      alias: 'v',
-      type: 'boolean',
-      desc: 'Display the version.'
-    },
-    restart: {
-      alias: 'r',
-      type: 'string',
-      desc: 'Type this command to manually restart the process. ' +
-        'Set to - to disable.',
-      default: 'rs'
-    },
-    help: {
-      alias: 'h',
-      type: 'boolean',
-      desc: 'Display this help message.'
-    },
-    'use-polling': {
-      alias: 'p',
-      type: 'boolean',
-      desc: 'Slower, but useful when watching over NFS.'
-    }
-  }).argv;
+argv
+  .version(require('../package').version)
+  .usage('[options] -- command arg1 arg2...')
+  .option(
+    '-w, --watch [paths]',
+    'rerun the command when [paths] change',
+    function (str) { return str.split(','); }
+  )
+  .option(
+    '-i, --ignore [regex] [default /\\.]',
+    'ignore changes to paths matching [regex]',
+    RegExp,
+    '/\\.'
+  )
+  .option('-k, --keep-alive', 'restart on exit, useful for servers')
+  .option('-W, --wait [sec]', 'time after SIGTERM to SIGKILL', parseFloat)
+  .option('-s, --silent', 'be quieter, only output errors')
+  .option('-n, --no-color', 'disable colored output')
+  .option(
+    '-r, --restart [string] [default rs]',
+    'enter this command to manually restart the process. Set to - to disable.',
+    'rs'
+  )
+  .option('-p, --use-polling', 'slower, but useful when watching over NFS')
+  .parse(process.argv);
 
-var log = new Log(_.pick(argv, 'silent'));
 require('chalk').enabled = !argv['no-color'];
-if (argv.version) {
-  return log.info('Version', require('../package').version, 'info');
-} else if (argv.help) {
-  return optimist.showHelp();
-} else if (!argv._[0]) {
-  optimist.showHelp();
-  log.error('Whoops!', 'Please specify a command.');
-  return process.exit(1);
+var command = log.config.name = _.first(argv.args);
+log.config.colors = argv.color;
+if (argv.silent) log.config.level = 'error';
+if (!command) {
+  process.stderr.write(argv.helpInformation());
+  log.config.name = 'watchy';
+  log.error('Please specify a command.');
+  process.exit(1);
 }
-var options = _.extend({log: log}, _.pick(argv, 'wait', 'restart'));
-options.restart = options.restart.trim();
-if (argv['keep-alive']) options.keepAlive = true;
-var pheonix = new Pheonix(argv._[0], _.rest(argv._), options);
+var options = _.extend(
+  {log: log},
+  _.pick(argv, 'wait', 'restart', 'keepAlive')
+);
+var pheonix = new Pheonix(command, _.rest(argv.args), options);
 
 // Start watching if paths are specified.
 if (argv.watch) {
-  var resolve = function (p) { return path.resolve(p); };
-  var paths = _.map(argv.watch.split(','), resolve);
-
-  var watcherOptions = {
-    ignored: new RegExp(argv.ignore),
-    ignoreInitial: true,
-    persistent: true
-  };
-  if (argv['use-polling']) watcherOptions.usePolling = true;
-
   var watcher = chokidar
-    .watch(paths, watcherOptions)
+    .watch(_.map(argv.watch, function (p) { return path.resolve(p); }), {
+      ignored: new RegExp(argv.ignore),
+      ignoreInitial: true,
+      persistent: true,
+      usePolling: argv.usePolling
+    })
     .on('all', _.bind(pheonix.spawn, pheonix));
 
   process.on('SIGTERM', _.bind(watcher.close, watcher));
