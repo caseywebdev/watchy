@@ -18,7 +18,7 @@ argv
   .option(
     '-i, --ignore [regex] [default /\\.]',
     'ignore changes to paths matching [regex]',
-    RegExp,
+    function (str) { return new RegExp(str); },
     '/\\.'
   )
   .option('-k, --keep-alive', 'restart on exit, useful for servers')
