@@ -20,15 +20,18 @@ and you should have the `watchy` command available!
 Usage: watchy [options] -- command arg1 arg2...
 
 Options:
-  --watch, -w          A path or comma-separated paths to watch.
-  --ignore, -i         A regex of file paths to ignore.                                         [default: "/\\."]
-  --no-init-spawn, -S  Do not spawn when the watcher is created.                                [default: false]
-  --keep-alive, -k     Restart the process if it exits. Useful for servers.                     [default: false]
-  --wait, -W           Time (sec) to wait after sending SIGTERM to forcefully SIGKILL.
-  --silent, -s         Silence watching info, errors will still output to stderr.               [default: false]
-  --no-color, -n       Do not color output.                                                     [default: false]
-  --version, -v        Display the version.
-  --restart, -r        Type this command to manually restart the process. Set to - to disable.  [default: "rs"]
+
+  -h, --help                           output usage information
+  -V, --version                        output the version number
+  -w, --watch [paths]                  rerun the command when [paths] change
+  -i, --ignore [regex] [default /\.]   ignore changes to paths matching [regex]
+  -k, --keep-alive                     restart on exit, useful for servers
+  -W, --wait [sec]                     time after SIGTERM to SIGKILL
+  -s, --silent                         be quieter, only output errors
+  -n, --no-color                       disable colored output
+  -S, --no-init-spawn                  prevent spawn when the watcher is created
+  -r, --restart [string] [default rs]  enter this command to manually restart the process. Set to - to disable.
+  -p, --use-polling                    slower, but useful when watching over NFS
 ```
 
 ## Examples
