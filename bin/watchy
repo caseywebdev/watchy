@@ -52,7 +52,7 @@ var pheonix = new Pheonix(command, _.rest(argv.args), options);
 // Start watching if paths are specified.
 if (argv.watch) {
   var watcher = chokidar
-    .watch(_.map(argv.watch, function (p) { return path.resolve(p); }), {
+    .watch(_.map(argv.watch, function (p) { return path.resolve(process.cwd(), p); }), {
       ignored: new RegExp(argv.ignore),
       ignoreInitial: true,
       persistent: true,
