@@ -11,9 +11,13 @@ argv
   .version(require('../package').version)
   .usage('[options] -- command arg1 arg2...')
   .option(
-    '-w, --watch [paths]',
-    'rerun the command when [paths] change',
-    function (str) { return str.split(','); }
+    '-w, --watch [path]',
+    'rerun the command when [path] changes, can be specified multiple times',
+    function (path, paths) {
+      paths.push(path);
+      return paths;
+    },
+    []
   )
   .option(
     '-i, --ignore [regex] [default /\\.]',
