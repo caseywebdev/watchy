@@ -17,21 +17,28 @@ and you should have the `watchy` command available!
 ## Usage
 
 ```
-Usage: watchy [options] -- command arg1 arg2...
+Usage: watchy [options] -- command arg1 arg2 ...
+
+Run commands when paths change.
+
 
 Options:
 
-  -h, --help                           output usage information
-  -V, --version                        output the version number
-  -w, --watch [paths]                  rerun the command when [paths] change
-  -i, --ignore [regex] [default /\.]   ignore changes to paths matching [regex]
-  -k, --keep-alive                     restart on exit, useful for servers
-  -W, --wait [sec]                     time after SIGTERM to SIGKILL
-  -s, --silent                         be quieter, only output errors
-  -n, --no-color                       disable colored output
-  -S, --no-init-spawn                  prevent spawn when the watcher is created
-  -r, --restart [string] [default rs]  enter this command to manually restart the process. Set to - to disable.
-  -p, --use-polling                    slower, but useful when watching over NFS
+  -V, --version                   output the version number
+  -d, --debounce [seconds]        trigger a change at most every [seconds] seconds
+  -i, --ignore [regex]            ignore changes to paths matching [regex] (default: /\.)
+  -k, --keep-alive                restart the process if it exits
+  -n, --no-color                  disable colored output
+  -p, --use-polling               use file polling even if fsevents or inotify is available
+  -r, --restart [string]          send [string] to STDIN to restart the process
+  -R, --no-restart-after-signal   disable process restart after being signaled and exited
+  -s, --silent                    only output errors
+  -S, --no-init-spawn             prevent spawn when the watcher is created
+  -t, --shutdown-signal [signal]  use [signal] to shut down the process (default: SIGTERM)
+  -T, --reload-signal [signal]    use [signal] to reload the process (defaults to shutdown signal)
+  -w, --watch [dir/file/glob]     watch [dir/file/glob] for changes, can be specified multiple times
+  -W, --wait [seconds]            send SIGKILL to the process after [seconds] if it has't exited
+  -h, --help                      output usage information
 ```
 
 ## Examples
@@ -69,7 +76,10 @@ watchy -w . -- bash -c 'echo $EVENT $FILE'
 
 ## SIGTERM
 
-By default, `watchy` will send `SIGTERM` to the running process after a change and wait for it to exit gracefully. By sending the `--wait|-W n` option, you can tell `watchy` to forcefully `SIGKILL` the process after `n` seconds. In general, you should try to clean up connections in your processes like so:
+By default, `watchy` will send `SIGTERM` to the running process after a change
+and wait for it to exit gracefully. By sending the `--wait|-W n` option, you can
+tell `watchy` to forcefully `SIGKILL` the process after `n` seconds. In general,
+you should try to clean up connections in your processes like so:
 
 ```js
 process.on('SIGTERM', function () {

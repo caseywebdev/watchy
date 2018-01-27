@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.1
+- Add `-K/--kill-signal` option to override `SIGTERM` with a custom signal.
+- Add `-m/--multiple` flag to allow the kill signal to be sent to the process
+  multiple times.
+- `-K` and `-m` make upgrading a process on change possible, for example
+
+  ```bash
+  watchy -w /etc/nginx/nginx.conf -mK SIGHUP -- nginx
+  ```
+
+  will upgrade nginx whenever the config file is changed.
+
 ## 0.7.0
 - **BREAKING**
   The path passed to `-w/--watch` is no longer split on comma. This was a bit of
