@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.9.1
+- Fix package.json `main` entry.
+
 ## 0.9.0
 - File watching is now handled by the `@atom/watcher` package.
 - **BREAKING**
