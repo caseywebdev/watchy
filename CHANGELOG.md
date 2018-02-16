@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.0
+- File watching is now handled by the `@atom/watcher` package.
+- **BREAKING**
+  Removed `i/--ignore` option.
+- **BREAKING**
+  `-w/--watch` arguments are now specified as extglob patterns.
+
 ## 0.7.1
 - Add `-K/--kill-signal` option to override `SIGTERM` with a custom signal.
 - Add `-m/--multiple` flag to allow the kill signal to be sent to the process

@@ -11,12 +11,6 @@ module.exports = argv =>
       parseFloat
     )
     .option(
-      '-i, --ignore [regex]',
-      'ignore changes to paths matching [regex]',
-      str => new RegExp(str),
-      '/\\.'
-    )
-    .option(
       '-k, --keep-alive',
       'restart the process if it exits'
     )
@@ -54,8 +48,8 @@ module.exports = argv =>
       'use [signal] to reload the process (defaults to shutdown signal)'
     )
     .option(
-      '-w, --watch [dir/file/glob]',
-      'watch [dir/file/glob] for changes, can be specified multiple times',
+      '-w, --watch [pattern]',
+      'watch [pattern] for changes, can be specified multiple times',
       (path, paths = []) => [].concat(paths, path)
     )
     .option(

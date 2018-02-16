@@ -4,9 +4,9 @@ Run commands when paths change.
 
 ## Install
 
-You'll need to install [Node.js](http://nodejs.org) to use Watchy. Node comes
-packaged with [npm](https://www.npmjs.org), which is Node's package manager, and
-the preferred method of installing Watchy. After installing Node, simply type
+You'll need to install [Node.js] to use Watchy. Node comes packaged with [npm],
+which is Node's package manager, and the preferred method of installing Watchy.
+After installing Node, simply type
 
 ```bash
 npm install -g watchy
@@ -26,7 +26,6 @@ Options:
 
   -V, --version                   output the version number
   -d, --debounce [seconds]        trigger a change at most every [seconds] seconds
-  -i, --ignore [regex]            ignore changes to paths matching [regex] (default: /\.)
   -k, --keep-alive                restart the process if it exits
   -n, --no-color                  disable colored output
   -p, --use-polling               use file polling even if fsevents or inotify is available
@@ -36,19 +35,21 @@ Options:
   -S, --no-init-spawn             prevent spawn when the watcher is created
   -t, --shutdown-signal [signal]  use [signal] to shut down the process (default: SIGTERM)
   -T, --reload-signal [signal]    use [signal] to reload the process (defaults to shutdown signal)
-  -w, --watch [dir/file/glob]     watch [dir/file/glob] for changes, can be specified multiple times
+  -w, --watch [pattern]           watch [pattern] for changes, can be specified multiple times
   -W, --wait [seconds]            send SIGKILL to the process after [seconds] if it has't exited
   -h, --help                      output usage information
 ```
+
+The watch patterns are [extglob] format.
 
 ## Examples
 
 ```bash
 # The simple case
-watchy -w lib -- say "The lib directory changed."
+watchy -w 'lib/**/*' -- say "The lib directory changed."
 
 # Piping works as well
-watchy -w styles -- bash -c "lessc styles/main.less | autoprefixer -o .tmp/styles/main.css"
+watchy -w 'styles/**/*.less' -- bash -c "lessc styles/main.less | autoprefixer -o .tmp/styles/main.css"
 
 # Keep a process alive, restarting it as soon as it exits or "server.js"
 # changes.
@@ -64,15 +65,14 @@ watchy -ks -- bash -c 'date && sleep 1'
 # Tick tock (annoying version)!
 watchy -ks -- bash -c 'say "In case you were wondering, it is `date`" && sleep 5'
 
-# $EVENT and $FILE are passed to the process from chokidar (thanks @remy).
-watchy -w . -- bash -c 'echo $EVENT $FILE'
-# => change /Users/casey/projects/watchy/README.md
+# $WATCHY_ACTION and $WATCHY_PATH are passed to the process.
+watchy -w '**/*' -- bash -c 'echo $WATCHY_ACTION $WATCHY_PATH'
+# => modified /Users/casey/Documents/code/watchy/README.md
 ```
 
 > Note: If you're using `watchy` for help with preprocessing, I'd recommend
-> checking out my [cogs](https://github.com/caseywebdev/cogs) project that is
-> highly optimized for that case with in-memory processed file caching,
-> directives, AMD support, and much more.
+> checking out my [cogs] project that is highly optimized for that case with
+> in-memory processed file caching, directives, AMD support, and much more.
 
 ## SIGTERM
 
@@ -89,3 +89,26 @@ process.on('SIGTERM', function () {
   // etc...
 });
 ```
+
+## Node API
+
+As of `0.9.0` watchy exposes a Node.js API.
+
+```js
+const watchy = require('watchy');
+
+watchy({
+  patterns: ['js/**/*.js', 'css/**/*.css'],
+  onError: error => console.error(error),
+  onChange: ({action, path}) => console.log(action, path),
+  usePolling: true // defaults to `false`, but will fallback when fsevents are not available
+}).catch(er => {
+  console.error(er);
+  process.exit(1);
+});
+```
+
+[cogs]: https://github.com/caseywebdev/cogs
+[extglob]: http://www.linuxjournal.com/content/bash-extended-globbing
+[Node.js]: http://nodejs.org
+[npm]: https://www.npmjs.org

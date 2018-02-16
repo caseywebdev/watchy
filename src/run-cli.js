@@ -1,9 +1,8 @@
 const _ = require('underscore');
 const {spawn} = require('child_process');
-const chokidar = require('chokidar');
 const getLog = require('./get-log');
-const npath = require('npath');
 const parseArgv = require('./parse-argv');
+const watchy = require('.');
 
 const {env} = process;
 
@@ -16,7 +15,6 @@ module.exports = () => {
     args: [command, ...args],
     color: useColor,
     debounce,
-    ignore,
     initSpawn,
     keepAlive,
     restart,
@@ -42,13 +40,17 @@ module.exports = () => {
   let child;
   let sigkillTimeoutId;
   let state = 'dead';
-  let watcher;
+  let closeWatcher;
 
   const handleError = er => log('error', er.message);
 
   const handleClose = (code, signal) => {
+    child = null;
     if (signal) {
-      log(signal === shutdownSignal ? 'info' : 'error', `Killed with ${signal}`);
+      log(
+        signal === shutdownSignal ? 'info' : 'error',
+        `Killed with ${signal}`
+      );
     }
     if (code === 0) log('success', 'Exited cleanly');
     if (code > 0) log('error', `Exited with code ${code}`);
@@ -57,7 +59,7 @@ module.exports = () => {
     if (rerun) run();
   };
 
-  const run = (event, path) => {
+  const run = ({action, path} = {}) => {
     if (state !== 'dead') {
       if (state === 'unsignaled' || upgradeSignal) kill();
       return;
@@ -66,7 +68,7 @@ module.exports = () => {
     log('info', runLabel);
     state = 'unsignaled';
     child = spawn(command, args, {
-      env: {WATCHY_EVENT: event || '', WATCHY_FILE: path || '', ...env},
+      env: {WATCHY_ACTION: action || '', WATCHY_PATH: path || '', ...env},
       stdio: ['ignore', 1, 2]
     }).on('error', handleError).on('close', handleClose);
   };
@@ -78,7 +80,7 @@ module.exports = () => {
 
     if (terminate && state === 'unsignaled' && wait) {
       sigkillTimeoutId = setTimeout(sigkill, wait * 1000);
-      child.on('close', () => clearTimeout(sigkillTimeoutId));
+      child.once('close', () => clearTimeout(sigkillTimeoutId));
     }
 
     const signal = terminate ? shutdownSignal : reloadSignal;
@@ -94,17 +96,22 @@ module.exports = () => {
 
   const shutdown = () => {
     process.stdin.pause();
-    if (watcher) watcher.close();
+    if (closeWatcher) closeWatcher();
     keepAlive = false;
     restartAfterSignal = false;
     kill(true);
+    if (child) child.once('close', () => process.exit());
+    else process.exit();
   };
 
   if (watch) {
-    watcher = chokidar.watch(
-      watch.map(path => npath.resolve(path)),
-      {ignored: new RegExp(ignore), ignoreInitial: true, usePolling}
-    ).on('all', debounce ? _.debounce(run, debounce * 1000) : run);
+    watchy({
+      onChange: debounce ? _.debounce(run, debounce * 1000) : run,
+      onError: handleError,
+      patterns: watch,
+      usePolling
+    }).then(_closeWatcher => closeWatcher = _closeWatcher)
+      .catch(er => handleError(er));
   }
 
   if (restart) {
