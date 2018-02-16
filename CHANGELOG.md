@@ -1,8 +1,5 @@
 # Changelog
 
-## 0.9.2
-- Add `debounce` to node API.
-
 ## 0.9.1
 - Fix package.json `main` entry.
 

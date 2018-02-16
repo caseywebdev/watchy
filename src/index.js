@@ -22,7 +22,6 @@ const cleanDirs = dirs => {
 };
 
 module.exports = async ({
-  debounce,
   onChange = _.noop,
   onError = _.noop,
   patterns = [],
@@ -30,8 +29,6 @@ module.exports = async ({
 }) => {
   patterns = patterns.map(pattern => npath.resolve(pattern));
   const dirs = cleanDirs(patterns.map(getDir));
-
-  if (debounce) onChange = _.debounce(onChange, debounce * 1000);
 
   const handler = changes => {
     changes.forEach(({action, kind, path}) => {

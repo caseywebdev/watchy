@@ -106,8 +106,7 @@ module.exports = () => {
 
   if (watch) {
     watchy({
-      debounce,
-      onChange: run,
+      onChange: debounce ? _.debounce(run, debounce * 1000) : run,
       onError: handleError,
       patterns: watch,
       usePolling
