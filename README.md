@@ -98,6 +98,7 @@ As of `0.9.0` watchy exposes a Node.js API.
 const watchy = require('watchy');
 
 watchy({
+  debounce: 1, // defaults to 0, time in seconds to wait after the last change before firing the callback
   patterns: ['js/**/*.js', 'css/**/*.css'],
   onError: error => console.error(error),
   onChange: ({action, path}) => console.log(action, path),
