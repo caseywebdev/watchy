@@ -21,9 +21,7 @@ Usage: watchy [options] -- command arg1 arg2 ...
 
 Run commands when paths change.
 
-
 Options:
-
   -V, --version                   output the version number
   -d, --debounce [seconds]        trigger a change at most every [seconds] seconds
   -k, --keep-alive                restart the process if it exits
@@ -33,7 +31,7 @@ Options:
   -R, --no-restart-after-signal   disable process restart after being signaled and exited
   -s, --silent                    only output errors
   -S, --no-init-spawn             prevent spawn when the watcher is created
-  -t, --shutdown-signal [signal]  use [signal] to shut down the process (default: SIGTERM)
+  -t, --shutdown-signal [signal]  use [signal] to shut down the process (default: "SIGTERM")
   -T, --reload-signal [signal]    use [signal] to reload the process (defaults to shutdown signal)
   -w, --watch [pattern]           watch [pattern] for changes, can be specified multiple times
   -W, --wait [seconds]            send SIGKILL to the process after [seconds] if it has't exited
