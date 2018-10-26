@@ -109,6 +109,6 @@ watchy({
 ```
 
 [cogs]: https://github.com/caseywebdev/cogs
-[extglob]: http://www.linuxjournal.com/content/bash-extended-globbing
-[Node.js]: http://nodejs.org
-[npm]: https://www.npmjs.org
+[extglob]: https://www.linuxjournal.com/content/bash-extended-globbing
+[Node.js]: https://nodejs.org
+[npm]: https://www.npmjs.com
