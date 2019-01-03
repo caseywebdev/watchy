@@ -34,7 +34,7 @@ Options:
   -t, --shutdown-signal [signal]  use [signal] to shut down the process (default: "SIGTERM")
   -T, --reload-signal [signal]    use [signal] to reload the process (defaults to shutdown signal)
   -w, --watch [pattern]           watch [pattern] for changes, can be specified multiple times
-  -W, --wait [seconds]            send SIGKILL to the process after [seconds] if it has't exited
+  -W, --wait [seconds]            send SIGKILL to the process after [seconds] if it hasn't exited
   -h, --help                      output usage information
 ```
 

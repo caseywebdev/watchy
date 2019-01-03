@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.9.6
+- Fix typo in usage output.
+
 ## 0.9.1
 - Fix package.json `main` entry.
 

@@ -54,7 +54,7 @@ module.exports = argv =>
     )
     .option(
       '-W, --wait [seconds]',
-      "send SIGKILL to the process after [seconds] if it has't exited",
+      "send SIGKILL to the process after [seconds] if it hasn't exited",
       parseFloat
     )
     .parse(argv);
