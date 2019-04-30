@@ -1,6 +1,6 @@
 {
   "name": "watchy",
-  "version": "0.9.6",
+  "version": "0.9.7",
   "author": "Casey Foster <c@sey.me>",
   "license": "MIT",
   "main": "src",
@@ -12,11 +12,9 @@
     "watchy": "bin/watchy"
   },
   "dependencies": {
-    "@atom/watcher": "1",
     "chalk": "2",
+    "chokidar": "3",
     "commander": "2",
-    "minimatch": "3",
-    "npath": "1",
     "underscore": "1"
   }
 }

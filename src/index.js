@@ -1,54 +1,20 @@
 const _ = require('underscore');
-const {watchPath} = require('@atom/watcher');
-const minimatch = require('minimatch');
-const npath = require('npath');
+const chokidar = require('chokidar');
 
-const GLOB_RE = /[?*+@!]/;
+const handle = (onChange, action) => path => onChange({ action, path });
 
-const getDir = pattern => {
-  const {index} = GLOB_RE.exec(pattern) || {index: pattern.length};
-  const dir = npath.dirname(pattern.slice(0, index + 1));
-  return dir === '/' ? dir : `${dir}/`;
-};
-
-const cleanDirs = dirs => {
-  const sorted = _.sortBy(_.unique(dirs));
-  const cleaned = [];
-  for (let dir of sorted) {
-    if (!dir.startsWith(_.last(cleaned))) cleaned.push(dir);
-  }
-
-  return cleaned;
-};
-
-module.exports = async ({
+module.exports = ({
   onChange = _.noop,
   onError = _.noop,
   patterns = [],
   usePolling
-}) => {
-  patterns = patterns.map(pattern => npath.resolve(pattern));
-  const dirs = cleanDirs(patterns.map(getDir));
-
-  const handler = changes => {
-    changes.forEach(({action, kind, path}) => {
-      if (kind !== 'file') return;
-
-      for (let pattern of patterns) {
-        if (minimatch(path, pattern)) return onChange({action, path});
-      }
-    });
-  };
-
-  const getWatcher = _.partial(watchPath, _, {poll: usePolling}, handler);
-
-  const watchers = await Promise.all(dirs.map(getWatcher));
-
-  const onDidErrors = _.invoke(watchers, 'onDidError', onError);
-
-  return () => {
-    _.invoke(onDidErrors, 'dispose');
-    _.invoke(watchers, 'dispose');
-    _.invoke(_.compact(_.invoke(watchers, 'getNativeWatcher')), 'stop', false);
-  };
-};
+}) =>
+  new Promise(resolve => {
+    const watcher = chokidar
+      .watch(patterns, { ignoreInitial: true, usePolling })
+      .on('error', onError)
+      .on('ready', () => resolve(watcher.close.bind(watcher)))
+      .on('add', handle(onChange, 'add'))
+      .on('change', handle(onChange, 'change'))
+      .on('unlink', handle(onChange, 'unlink'));
+  });

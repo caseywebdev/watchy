@@ -1,13 +1,13 @@
 const _ = require('underscore');
-const {spawn} = require('child_process');
+const { spawn } = require('child_process');
 const getLog = require('./get-log');
 const parseArgv = require('./parse-argv');
 const watchy = require('.');
 
-const {env} = process;
+const { env } = process;
 
 const getRunLabel = args =>
-  args.map(arg => /\s/.test(arg) ? JSON.stringify(arg) : arg).join(' ');
+  args.map(arg => (/\s/.test(arg) ? JSON.stringify(arg) : arg)).join(' ');
 
 module.exports = () => {
   const argv = parseArgv(process.argv);
@@ -28,7 +28,7 @@ module.exports = () => {
     watch
   } = argv;
 
-  const log = getLog({onlyErrors, useColor});
+  const log = getLog({ onlyErrors, useColor });
 
   if (!command) {
     console.error(argv.helpInformation());
@@ -59,7 +59,7 @@ module.exports = () => {
     if (rerun) run();
   };
 
-  const run = ({action, path} = {}) => {
+  const run = ({ action, path } = {}) => {
     if (state !== 'dead') {
       if (state === 'unsignaled' || upgradeSignal) kill();
       return;
@@ -68,9 +68,11 @@ module.exports = () => {
     log('info', runLabel);
     state = 'unsignaled';
     child = spawn(command, args, {
-      env: {WATCHY_ACTION: action || '', WATCHY_PATH: path || '', ...env},
+      env: { WATCHY_ACTION: action || '', WATCHY_PATH: path || '', ...env },
       stdio: ['ignore', 1, 2]
-    }).on('error', handleError).on('close', handleClose);
+    })
+      .on('error', handleError)
+      .on('close', handleClose);
   };
 
   const kill = terminate => {
@@ -110,7 +112,8 @@ module.exports = () => {
       onError: handleError,
       patterns: watch,
       usePolling
-    }).then(_closeWatcher => closeWatcher = _closeWatcher)
+    })
+      .then(_closeWatcher => (closeWatcher = _closeWatcher))
       .catch(er => handleError(er));
   }
 

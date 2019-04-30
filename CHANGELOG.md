@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.9.7
+- @atom/watcher is likely being discontinued, so switching to chokidar@3
+
 ## 0.9.6
 - Fix typo in usage output.
 

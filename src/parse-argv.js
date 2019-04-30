@@ -10,14 +10,8 @@ module.exports = argv =>
       'trigger a change at most every [seconds] seconds',
       parseFloat
     )
-    .option(
-      '-k, --keep-alive',
-      'restart the process if it exits'
-    )
-    .option(
-      '-n, --no-color',
-      'disable colored output'
-    )
+    .option('-k, --keep-alive', 'restart the process if it exits')
+    .option('-n, --no-color', 'disable colored output')
     .option(
       '-p, --use-polling',
       'use file polling even if fsevents or inotify is available'
@@ -30,14 +24,8 @@ module.exports = argv =>
       '-R, --no-restart-after-signal',
       'disable process restart after being signaled and exited'
     )
-    .option(
-      '-s, --silent',
-      'only output errors'
-    )
-    .option(
-      '-S, --no-init-spawn',
-      'prevent spawn when the watcher is created'
-    )
+    .option('-s, --silent', 'only output errors')
+    .option('-S, --no-init-spawn', 'prevent spawn when the watcher is created')
     .option(
       '-t, --shutdown-signal [signal]',
       'use [signal] to shut down the process',
