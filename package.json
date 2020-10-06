@@ -1,6 +1,6 @@
 {
   "name": "watchy",
-  "version": "0.9.8",
+  "version": "0.9.9",
   "author": "Casey Foster <c@sey.me>",
   "license": "MIT",
   "main": "src",
@@ -9,12 +9,12 @@
     "url": "https://github.com/caseywebdev/watchy"
   },
   "bin": {
-    "watchy": "bin/watchy"
+    "watchy": "src/cli.js"
   },
   "dependencies": {
     "chalk": "4",
     "chokidar": "3",
-    "commander": "5",
+    "commander": "6",
     "underscore": "1"
   }
 }

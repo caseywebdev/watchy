@@ -1,5 +1,5 @@
-const _ = require('underscore');
 const chokidar = require('chokidar');
+const _ = require('underscore');
 
 const handle = (onChange, action) => path => onChange({ action, path });
 
