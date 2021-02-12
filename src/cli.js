@@ -15,7 +15,7 @@ const { env } = process;
 const getRunLabel = args =>
   args.map(arg => (/\s/.test(arg) ? JSON.stringify(arg) : arg)).join(' ');
 
-const argv = program
+program
   .version(version)
   .usage('[options] -- command arg1 arg2 ...')
   .description('Run commands when paths change.')
@@ -61,8 +61,9 @@ const argv = program
   )
   .parse(process.argv);
 
+const [command, ...args] = program.args;
+
 let {
-  args: [command, ...args],
   color: useColor,
   debounce,
   initSpawn,
@@ -76,7 +77,7 @@ let {
   usePolling,
   wait,
   watch
-} = argv;
+} = program.opts();
 
 const { green, red } = new chalk.Instance({
   level: useColor ? 1 : 0
@@ -92,7 +93,7 @@ const log = (type, message) => {
 };
 
 if (!command) {
-  console.error(argv.helpInformation());
+  console.error(program.helpInformation());
   log('error', 'Please specify a command.');
   process.exit(1);
 }

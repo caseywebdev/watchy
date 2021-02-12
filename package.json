@@ -1,6 +1,6 @@
 {
   "name": "watchy",
-  "version": "0.9.9",
+  "version": "0.9.10",
   "author": "Casey Foster <c@sey.me>",
   "license": "MIT",
   "main": "src",
@@ -14,7 +14,7 @@
   "dependencies": {
     "chalk": "4",
     "chokidar": "3",
-    "commander": "6",
+    "commander": "7",
     "underscore": "1"
   }
 }
