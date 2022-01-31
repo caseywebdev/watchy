@@ -25,7 +25,6 @@ Options:
   -V, --version                   output the version number
   -d, --debounce [seconds]        trigger a change at most every [seconds] seconds
   -k, --keep-alive                restart the process if it exits
-  -n, --no-color                  disable colored output
   -p, --use-polling               use file polling even if fsevents or inotify is available
   -r, --restart [string]          send [string] to STDIN to restart the process
   -R, --no-restart-after-signal   disable process restart after being signaled and exited

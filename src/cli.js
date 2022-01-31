@@ -1,14 +1,19 @@
 #!/usr/bin/env node
 
-const { spawn } = require('child_process');
+import { spawn } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import url from 'url';
 
-const chalk = require('chalk');
-const { program } = require('commander');
-const _ = require('underscore');
+import chalk from 'chalk';
+import { program } from 'commander';
+import _ from 'underscore';
 
-const { version } = require('../package.json');
+import watchy from './index.js';
 
-const watchy = require('.');
+const { path: thisPath } = url.parse(import.meta.url);
+const packagePath = `${path.dirname(thisPath)}/../package.json`;
+const { version } = JSON.parse(fs.readFileSync(packagePath));
 
 const { env } = process;
 
@@ -25,7 +30,6 @@ program
     parseFloat
   )
   .option('-k, --keep-alive', 'restart the process if it exits')
-  .option('-n, --no-color', 'disable colored output')
   .option(
     '-p, --use-polling',
     'use file polling even if fsevents or inotify is available'
@@ -64,13 +68,12 @@ program
 const [command, ...args] = program.args;
 
 let {
-  color: useColor,
   debounce,
   initSpawn,
   keepAlive,
+  reloadSignal,
   restart,
   restartAfterSignal,
-  reloadSignal,
   shutdownSignal,
   silent: onlyErrors,
   upgradeSignal,
@@ -79,10 +82,7 @@ let {
   watch
 } = program.opts();
 
-const { green, red } = new chalk.Instance({
-  level: useColor ? 1 : 0
-});
-
+const { green, red } = chalk;
 const colors = { error: red, success: green };
 
 const log = (type, message) => {

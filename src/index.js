@@ -1,9 +1,9 @@
-const chokidar = require('chokidar');
-const _ = require('underscore');
+import chokidar from 'chokidar';
+import _ from 'underscore';
 
 const handle = (onChange, action) => path => onChange({ action, path });
 
-module.exports = ({
+export default ({
   onChange = _.noop,
   onError = _.noop,
   patterns = [],

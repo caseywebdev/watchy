@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.0
+- Upgrade to ES modules.
+- Drop -n/--no-color flag, determine color based on TTY.
+  Use FORCE_COLOR=0/1 envvar override color support.
+
 ## 0.9.7
 - @atom/watcher is likely being discontinued, so switching to chokidar@3
 
