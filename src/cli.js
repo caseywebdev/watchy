@@ -11,8 +11,7 @@ import _ from 'underscore';
 
 import watchy from './index.js';
 
-const { path: thisPath } = url.parse(import.meta.url);
-const packagePath = `${path.dirname(thisPath)}/../package.json`;
+const packagePath = new URL('../package.json', import.meta.url);
 const { version } = JSON.parse(fs.readFileSync(packagePath));
 
 const { env } = process;
