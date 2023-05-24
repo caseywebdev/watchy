@@ -2,8 +2,6 @@
 
 import { spawn } from 'child_process';
 import fs from 'fs';
-import path from 'path';
-import url from 'url';
 
 import chalk from 'chalk';
 import { program } from 'commander';
