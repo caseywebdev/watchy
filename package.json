@@ -1,7 +1,7 @@
 {
   "name": "watchy",
   "type": "module",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "author": "Casey Foster <c@sey.me>",
   "license": "MIT",
   "main": "src/index.js",
@@ -15,7 +15,7 @@
   "dependencies": {
     "chalk": "5",
     "chokidar": "3",
-    "commander": "9",
+    "commander": "12",
     "underscore": "1"
   }
 }
