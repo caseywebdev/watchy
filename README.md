@@ -25,16 +25,17 @@ Options:
   -V, --version                   output the version number
   -d, --debounce [seconds]        trigger a change at most every [seconds] seconds
   -k, --keep-alive                restart the process if it exits
-  -p, --use-polling               use file polling even if fsevents or inotify is available
   -r, --restart [string]          send [string] to STDIN to restart the process
   -R, --no-restart-after-signal   disable process restart after being signaled and exited
   -s, --silent                    only output errors
   -S, --no-init-spawn             prevent spawn when the watcher is created
   -t, --shutdown-signal [signal]  use [signal] to shut down the process (default: "SIGTERM")
-  -T, --reload-signal [signal]    use [signal] to reload the process (defaults to shutdown signal)
+  -T, --reload-signal [signal]    use [signal] to reload the process (defaults to shutdown
+                                  signal)
   -w, --watch [pattern]           watch [pattern] for changes, can be specified multiple times
-  -W, --wait [seconds]            send SIGKILL to the process after [seconds] if it hasn't exited
-  -h, --help                      output usage information
+  -W, --wait [seconds]            send SIGKILL to the process after [seconds] if it hasn't
+                                  exited
+  -h, --help                      display help for command
 ```
 
 The watch patterns are [extglob] format.
@@ -62,8 +63,8 @@ watchy -ks -- bash -c 'date && sleep 1'
 # Tick tock (annoying version)!
 watchy -ks -- bash -c 'say "In case you were wondering, it is `date`" && sleep 5'
 
-# $WATCHY_ACTION and $WATCHY_PATH are passed to the process.
-watchy -w '**/*' -- bash -c 'echo $WATCHY_ACTION $WATCHY_PATH'
+# $WATCHY_PATH is passed to the process.
+watchy -S -w '**/*' -- bash -c 'echo $WATCHY_PATH was changed'
 # => modified /Users/casey/Documents/code/watchy/README.md
 ```
 
@@ -92,16 +93,11 @@ process.on('SIGTERM', function () {
 As of `0.9.0` watchy exposes a Node.js API.
 
 ```js
-const watchy = require('watchy');
+import { watch } from 'watchy';
 
-watchy({
-  patterns: ['js/**/*.js', 'css/**/*.css'],
-  onError: error => console.error(error),
+watch({
   onChange: ({action, path}) => console.log(action, path),
-  usePolling: true // defaults to `false`, but will fallback when fsevents are not available
-}).catch(er => {
-  console.error(er);
-  process.exit(1);
+  patterns: ['js/**/*.js', 'css/**/*.css'],
 });
 ```
 

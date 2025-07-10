@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.11.0
+- Add TS definition file
+- **BREAKING**
+  - Default export converted to named `watch` export.
+  - `chokidar` dependency dropped. Uses `fs.watch` now.
+  - `usePolling` option dropped
+  - `onError` callback removed. `watch` will fail synchronously if a watcher is not able to created on the base directory.
+  - onChange callback changed from `(options: { action: string; path: string }) => void` to just `(path: string) => void`. Action was often incorrect/inconsistent.
+  - The CLI remains the same except for the removal of `--use-polling`
+
 ## 0.10.0
 - Upgrade to ES modules.
 - Drop -n/--no-color flag, determine color based on TTY.

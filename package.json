@@ -1,7 +1,7 @@
 {
   "name": "watchy",
   "type": "module",
-  "version": "0.10.2",
+  "version": "0.11.0",
   "author": "Casey Foster <c@sey.me>",
   "license": "MIT",
   "main": "src/index.js",
@@ -12,10 +12,24 @@
   "bin": {
     "watchy": "src/cli.js"
   },
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
   "dependencies": {
     "chalk": "5",
-    "chokidar": "3",
-    "commander": "12",
-    "underscore": "1"
-  }
+    "commander": "12"
+  },
+  "devDependencies": {
+    "@types/node": "24",
+    "eslint": "9",
+    "eslint-config-coderiety": "2",
+    "typescript": "5"
+  },
+  "files": [
+    "/src",
+    "/types"
+  ]
 }

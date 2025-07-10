@@ -1,23 +1,28 @@
 #!/usr/bin/env node
 
-import { spawn } from 'child_process';
-import fs from 'fs';
+/** @import {ChildProcess} from 'node:child_process' */
+
+import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 
 import chalk from 'chalk';
 import { program } from 'commander';
-import _ from 'underscore';
 
-import watchy from './index.js';
+import { watch } from './index.js';
+
+const { console, process, URL } = globalThis;
 
 const packagePath = new URL('../package.json', import.meta.url);
-const { version } = JSON.parse(fs.readFileSync(packagePath));
+const { version } = JSON.parse(fs.readFileSync(packagePath).toString());
 
 const { env } = process;
 
+/** @param {string[]} args */
 const getRunLabel = args =>
   args.map(arg => (/\s/.test(arg) ? JSON.stringify(arg) : arg)).join(' ');
 
 program
+  .name('watchy')
   .version(version)
   .usage('[options] -- command arg1 arg2 ...')
   .description('Run commands when paths change.')
@@ -27,10 +32,6 @@ program
     parseFloat
   )
   .option('-k, --keep-alive', 'restart the process if it exits')
-  .option(
-    '-p, --use-polling',
-    'use file polling even if fsevents or inotify is available'
-  )
   .option(
     '-r, --restart [string]',
     'send [string] to STDIN to restart the process'
@@ -53,7 +54,7 @@ program
   .option(
     '-w, --watch [pattern]',
     'watch [pattern] for changes, can be specified multiple times',
-    (path, paths = []) => [].concat(paths, path)
+    (path, paths = []) => [...paths, path]
   )
   .option(
     '-W, --wait [seconds]',
@@ -74,19 +75,44 @@ let {
   shutdownSignal,
   silent: onlyErrors,
   upgradeSignal,
-  usePolling,
   wait,
-  watch
+  watch: patterns
 } = program.opts();
 
 const { green, red } = chalk;
-const colors = { error: red, success: green };
+const colors = {
+  error: red,
+  /** @param {string} str */
+  info: str => str,
+  success: green
+};
 
+/**
+ * @param {'error' | 'info' | 'success'} type
+ * @param {string} message
+ */
 const log = (type, message) => {
   if (onlyErrors && type !== 'error') return;
 
-  message = (colors[type] || _.identity)(`[${type}] ${message}`);
+  message = colors[type](`[${type}] ${message}`);
   console[type === 'error' ? 'error' : 'log'](message);
+};
+
+const { clearTimeout, setTimeout } = globalThis;
+
+/**
+ * @template {(...args: any[]) => any} T
+ * @param {T} cb
+ * @param {number} delay
+ * @returns {(...args: Parameters<T>) => void}
+ */
+const debounceFn = (cb, delay) => {
+  /** @type {ReturnType<typeof setTimeout>} */
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => cb(...args), delay * 1000);
+  };
 };
 
 if (!command) {
@@ -96,15 +122,23 @@ if (!command) {
 }
 
 const runLabel = getRunLabel([command, ...args]);
+/** @type {ChildProcess | undefined} */
 let child;
+/** @type {NodeJS.Timeout | undefined} */
 let sigkillTimeoutId;
 let state = 'dead';
+/** @type {ReturnType<typeof watch>} */
 let closeWatcher;
 
+/** @param {Error} er */
 const handleError = er => log('error', er.message);
 
+/**
+ * @param {number} code
+ * @param {NodeJS.Signals | undefined} signal
+ */
 const handleClose = (code, signal) => {
-  child = null;
+  child = undefined;
   if (signal) {
     log(signal === shutdownSignal ? 'info' : 'error', `Killed with ${signal}`);
   }
@@ -115,7 +149,8 @@ const handleClose = (code, signal) => {
   if (rerun) run();
 };
 
-const run = ({ action, path } = {}) => {
+/** @param {string | undefined} [path] */
+const run = path => {
   if (state !== 'dead') {
     if (state === 'unsignaled' || upgradeSignal) kill();
     return;
@@ -124,32 +159,33 @@ const run = ({ action, path } = {}) => {
   log('info', runLabel);
   state = 'unsignaled';
   child = spawn(command, args, {
-    env: { WATCHY_ACTION: action || '', WATCHY_PATH: path || '', ...env },
+    env: { WATCHY_PATH: path || '', ...env },
     stdio: ['ignore', 1, 2]
   })
     .on('error', handleError)
     .on('close', handleClose);
 };
 
-const kill = terminate => {
+/** @param {boolean} [terminate] */
+const kill = (terminate = false) => {
   if (state === 'dead' || state === 'terminating') return;
 
   if (!terminate) terminate = !reloadSignal;
 
   if (terminate && state === 'unsignaled' && wait) {
     sigkillTimeoutId = setTimeout(sigkill, wait * 1000);
-    child.once('close', () => clearTimeout(sigkillTimeoutId));
+    child?.once('close', () => clearTimeout(sigkillTimeoutId));
   }
 
   const signal = terminate ? shutdownSignal : reloadSignal;
   log('info', `Sending ${signal}...`);
   state = terminate ? 'terminating' : 'reloading';
-  child.kill(signal);
+  child?.kill(signal);
 };
 
 const sigkill = () => {
   log('error', `Failed to kill with ${shutdownSignal} after ${wait} seconds`);
-  child.kill('SIGKILL');
+  child?.kill('SIGKILL');
 };
 
 const shutdown = () => {
@@ -162,15 +198,16 @@ const shutdown = () => {
   else process.exit();
 };
 
-if (watch) {
-  watchy({
-    onChange: debounce ? _.debounce(run, debounce * 1000) : run,
-    onError: handleError,
-    patterns: watch,
-    usePolling
-  })
-    .then(_closeWatcher => (closeWatcher = _closeWatcher))
-    .catch(er => handleError(er));
+if (patterns) {
+  try {
+    closeWatcher = watch({
+      onChange: debounce ? debounceFn(run, debounce) : run,
+      patterns
+    });
+  } catch (er) {
+    handleError(/** @type {Error} */ (er));
+    process.exit(1);
+  }
 }
 
 if (restart) {

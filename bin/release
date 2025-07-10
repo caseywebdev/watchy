@@ -1,0 +1,13 @@
+#!/bin/sh -e
+
+bumpit "${1:-???}"
+
+bin/build
+
+version=$(jq -r .version package.json)
+
+git commit -am "Release $version"
+git tag -m $version $version
+git push
+git push --tags
+npm publish
