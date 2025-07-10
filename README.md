@@ -17,7 +17,7 @@ and you should have the `watchy` command available!
 ## Usage
 
 ```
-Usage: watchy [options] -- command arg1 arg2 ...
+Usage: watchy [options] -- <command> [args...]
 
 Run commands when paths change.
 

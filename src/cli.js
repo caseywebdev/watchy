@@ -24,7 +24,7 @@ const getRunLabel = args =>
 program
   .name('watchy')
   .version(version)
-  .usage('[options] -- command arg1 arg2 ...')
+  .usage('[options] -- <command> [args...]')
   .description('Run commands when paths change.')
   .option(
     '-d, --debounce [seconds]',
@@ -61,6 +61,7 @@ program
     "send SIGKILL to the process after [seconds] if it hasn't exited",
     parseFloat
   )
+  .arguments('<command> [args...]')
   .parse(process.argv);
 
 const [command, ...args] = program.args;
