@@ -76,8 +76,8 @@ export const watch = ({ onChange, patterns }) => {
 
   (async () => {
     let isInitial = true;
+    let needsNewWatcher = false;
     while (isActive) {
-      const initialChangedPaths = new Set(changedPaths);
       const unseenPaths = new Set(mtimes.keys());
       for (const pattern of patterns) {
         const dirents = await Array.fromAsync(
@@ -91,7 +91,10 @@ export const watch = ({ onChange, patterns }) => {
 
           const path = resolve(dirent.parentPath, dirent.name);
           unseenPaths.delete(path);
-          if ((await didChange(path)) && !isInitial) changedPaths.add(path);
+          if ((await didChange(path)) && !isInitial) {
+            changedPaths.add(path);
+            needsNewWatcher = true;
+          }
           if (!isInitial) await setTimeout();
           if (!isActive) return;
         }
@@ -99,16 +102,17 @@ export const watch = ({ onChange, patterns }) => {
       isInitial = false;
 
       for (const path of unseenPaths) {
-        if (await didChange(path)) changedPaths.add(path);
+        if (await didChange(path)) {
+          changedPaths.add(path);
+          needsNewWatcher = true;
+        }
         await setTimeout();
         if (!isActive) return;
       }
 
-      if (
-        changedPaths.size &&
-        !changedPaths.difference(initialChangedPaths).size
-      ) {
+      if (needsNewWatcher) {
         flushChanges();
+        needsNewWatcher = false;
         watcher.close();
         watcher = createWatcher();
       }
