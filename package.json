@@ -1,7 +1,7 @@
 {
   "name": "watchy",
   "type": "module",
-  "version": "0.11.3",
+  "version": "0.12.0",
   "author": "Casey Foster <c@sey.me>",
   "license": "MIT",
   "main": "src/index.js",

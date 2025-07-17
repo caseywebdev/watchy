@@ -1,23 +1,19 @@
 import { watch as fsWatch } from 'node:fs';
 import { glob, stat } from 'node:fs/promises';
 import { dirname, join, matchesGlob, relative, resolve } from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 
-const { clearTimeout, setTimeout } = globalThis;
-
-/** @param {{ onChange: (path: string) => void; patterns: string[] }} options */
+/** @param {{ onChange: (paths: string[]) => void; patterns: string[] }} options */
 export const watch = ({ onChange, patterns }) => {
   if (!patterns.length) return () => {};
+
+  let isActive = true;
 
   /** @type {Map<string, number>} */
   const mtimes = new Map();
 
-  let isActive = true;
-
-  /** @type {NodeJS.Timeout} */
-  let recreateWatcherTimeout;
-
-  /** @type {NodeJS.Timeout} */
-  let reconcileTimeout;
+  /** @type {Set<string>} */
+  const changedPaths = new Set();
 
   patterns = patterns.map(pattern => resolve(pattern));
 
@@ -32,16 +28,8 @@ export const watch = ({ onChange, patterns }) => {
     }
   }
 
-  /**
-   * @param {string} path
-   * @param {boolean} [isFromReconciler]
-   * @param {boolean} [isInitial]
-   */
-  const checkPath = async (
-    path,
-    isFromReconciler = false,
-    isInitial = false
-  ) => {
+  /** @param {string} path */
+  const didChange = async path => {
     const existing = mtimes.get(path);
     try {
       const stats = await stat(path);
@@ -49,15 +37,23 @@ export const watch = ({ onChange, patterns }) => {
 
       const mtime = stats.mtime.getTime();
       mtimes.set(path, mtime);
-      if ((isInitial && !existing) || mtime === existing) return;
+      return mtime !== existing;
     } catch {
-      if (!existing) return;
-
       mtimes.delete(path);
+      return !!existing;
     }
+  };
 
-    onChange(relative('.', path));
-    if (isFromReconciler) recreateWatcher();
+  const flushChanges = async () => {
+    if (!changedPaths.size) return;
+
+    const initialChangedPaths = new Set(changedPaths);
+    await setTimeout(100);
+
+    if (!isActive || changedPaths.difference(initialChangedPaths).size) return;
+
+    onChange([...changedPaths].map(path => relative('.', path)).sort());
+    changedPaths.clear();
   };
 
   const createWatcher = () =>
@@ -66,59 +62,61 @@ export const watch = ({ onChange, patterns }) => {
 
       const path = join(dir, filename);
       for (const pattern of patterns) {
-        if (matchesGlob(path, pattern)) return await checkPath(path);
+        if (matchesGlob(path, pattern)) {
+          if (await didChange(path)) {
+            changedPaths.add(path);
+            flushChanges();
+          }
+          return;
+        }
       }
     });
 
   let watcher = createWatcher();
 
-  const recreateWatcher = () => {
-    clearTimeout(recreateWatcherTimeout);
-    recreateWatcherTimeout = setTimeout(() => {
-      watcher.close();
-      watcher = createWatcher();
-    }, 1000);
-  };
-
-  const nextTurn = async () => {
-    const { resolve, promise } = Promise.withResolvers();
-    reconcileTimeout = setTimeout(resolve);
-    return promise;
-  };
-
   (async () => {
     let isInitial = true;
     while (isActive) {
+      const initialChangedPaths = new Set(changedPaths);
       const unseenPaths = new Set(mtimes.keys());
       for (const pattern of patterns) {
         const dirents = await Array.fromAsync(
           glob(pattern, { withFileTypes: true })
         );
+        if (!isInitial) await setTimeout();
+        if (!isActive) return;
 
         for (const dirent of dirents) {
           if (dirent.isDirectory()) continue;
 
           const path = resolve(dirent.parentPath, dirent.name);
           unseenPaths.delete(path);
-          await checkPath(path, true, isInitial);
-          if (!isInitial) await nextTurn();
+          if ((await didChange(path)) && !isInitial) changedPaths.add(path);
+          if (!isInitial) await setTimeout();
           if (!isActive) return;
         }
       }
       isInitial = false;
 
       for (const path of unseenPaths) {
-        await checkPath(path, true);
-        await nextTurn();
+        if (await didChange(path)) changedPaths.add(path);
+        await setTimeout();
         if (!isActive) return;
+      }
+
+      if (
+        changedPaths.size &&
+        !changedPaths.difference(initialChangedPaths).size
+      ) {
+        flushChanges();
+        watcher.close();
+        watcher = createWatcher();
       }
     }
   })();
 
   return () => {
     isActive = false;
-    clearTimeout(recreateWatcherTimeout);
-    clearTimeout(reconcileTimeout);
     watcher.close();
   };
 };

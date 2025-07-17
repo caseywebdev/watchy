@@ -150,8 +150,8 @@ const handleClose = (code, signal) => {
   if (rerun) run();
 };
 
-/** @param {string | undefined} [path] */
-const run = path => {
+/** @param {string[] | undefined} [paths] */
+const run = (paths = []) => {
   if (state !== 'dead') {
     if (state === 'unsignaled' || upgradeSignal) kill();
     return;
@@ -160,7 +160,7 @@ const run = path => {
   log('info', runLabel);
   state = 'unsignaled';
   child = spawn(command, args, {
-    env: { WATCHY_PATH: path || '', ...env },
+    env: { WATCHY_PATHS: paths.join(','), ...env },
     stdio: ['ignore', 1, 2]
   })
     .on('error', handleError)

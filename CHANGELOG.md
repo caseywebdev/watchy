@@ -1,5 +1,16 @@
 # Changelog
 
+# 0.12.0
+- A file poller was added to pick up file changes that may have been missed by
+  file system events. This adds a small CPU overhead but means changed files
+  will all eventually be detected.
+- **BREAKING**
+  - A short debounce time was added to the `onChange` callback to prevent
+    duplicate changes triggering in rapid succession.
+  - The `onChange` callback now receives `paths` instead of a single `path`.
+  - The `WATCHY_PATH` envvar has been renamed to `WATCHY_PATHS` and contains a
+    comma-separated list of all paths changed
+
 ## 0.11.0
 - Add TS definition file
 - **BREAKING**

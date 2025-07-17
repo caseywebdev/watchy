@@ -63,8 +63,8 @@ watchy -ks -- bash -c 'date && sleep 1'
 # Tick tock (annoying version)!
 watchy -ks -- bash -c 'say "In case you were wondering, it is `date`" && sleep 5'
 
-# $WATCHY_PATH is passed to the process.
-watchy -S -w '**/*' -- bash -c 'echo $WATCHY_PATH was changed'
+# The envvar WATCHY_PATHS is passed to the process.
+watchy -S -w '**/*' -- bash -c 'echo $WATCHY_PATHS changed'
 # => modified /Users/casey/Documents/code/watchy/README.md
 ```
 
@@ -80,7 +80,7 @@ tell `watchy` to forcefully `SIGKILL` the process after `n` seconds. In general,
 you should try to clean up connections in your processes like so:
 
 ```js
-process.on('SIGTERM', function () {
+process.on('SIGTERM', () => {
   server.close();
   db.disconnect();
   redis.quit();
@@ -96,7 +96,7 @@ As of `0.9.0` watchy exposes a Node.js API.
 import { watch } from 'watchy';
 
 watch({
-  onChange: ({action, path}) => console.log(action, path),
+  onChange: paths => console.log(paths),
   patterns: ['js/**/*.js', 'css/**/*.css'],
 });
 ```
