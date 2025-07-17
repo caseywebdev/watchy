@@ -1,7 +1,26 @@
 import { watch as fsWatch } from 'node:fs';
 import { glob, stat } from 'node:fs/promises';
 import { dirname, join, matchesGlob, relative, resolve } from 'node:path';
-import { setTimeout } from 'node:timers/promises';
+
+const { clearTimeout, setTimeout } = globalThis;
+
+const flushDelay = 100;
+const scanDelay = 5000;
+
+/** @param {string[]} patterns */
+const getCommonDir = patterns => {
+  let dir = '';
+  for (const pattern of patterns) {
+    let pDir = dirname(pattern);
+    while (pDir.match(/[[{(*?]/)) pDir = dirname(pDir);
+    dir ||= pDir;
+    while (pDir !== dir) {
+      if (dir.length > pDir.length) dir = dirname(dir);
+      else pDir = dirname(pDir);
+    }
+  }
+  return dir;
+};
 
 /** @param {{ onChange: (paths: string[]) => void; patterns: string[] }} options */
 export const watch = ({ onChange, patterns }) => {
@@ -15,18 +34,14 @@ export const watch = ({ onChange, patterns }) => {
   /** @type {Set<string>} */
   const changedPaths = new Set();
 
-  patterns = patterns.map(pattern => resolve(pattern));
+  /** @type {NodeJS.Timeout} */
+  let flushTimeout;
 
-  let dir = '';
-  for (const pattern of patterns) {
-    let pDir = dirname(pattern);
-    while (pDir.match(/[[{(*?]/)) pDir = dirname(pDir);
-    dir ||= pDir;
-    while (pDir !== dir) {
-      if (dir.length > pDir.length) dir = dirname(dir);
-      else pDir = dirname(pDir);
-    }
-  }
+  /** @type {NodeJS.Timeout} */
+  let scanTimeout;
+
+  patterns = patterns.map(pattern => resolve(pattern));
+  const dir = getCommonDir(patterns);
 
   /** @param {string} path */
   const didChange = async path => {
@@ -44,16 +59,19 @@ export const watch = ({ onChange, patterns }) => {
     }
   };
 
-  const flushChanges = async () => {
-    if (!changedPaths.size) return;
+  /** @param {string[] | Set<string>} paths */
+  const flush = async paths => {
+    clearTimeout(flushTimeout);
 
-    const initialChangedPaths = new Set(changedPaths);
-    await setTimeout(100);
+    for (const path of paths) changedPaths.add(path);
 
-    if (!isActive || changedPaths.difference(initialChangedPaths).size) return;
+    flushTimeout = setTimeout(() => {
+      if (!isActive) return;
 
-    onChange([...changedPaths].map(path => relative('.', path)).sort());
-    changedPaths.clear();
+      const sorted = [...changedPaths].map(path => relative('.', path)).sort();
+      changedPaths.clear();
+      onChange(sorted);
+    }, flushDelay);
   };
 
   const createWatcher = () =>
@@ -63,11 +81,7 @@ export const watch = ({ onChange, patterns }) => {
       const path = join(dir, filename);
       for (const pattern of patterns) {
         if (matchesGlob(path, pattern)) {
-          if (await didChange(path)) {
-            changedPaths.add(path);
-            flushChanges();
-          }
-          return;
+          if (await didChange(path)) return flush([path]);
         }
       }
     });
@@ -76,14 +90,14 @@ export const watch = ({ onChange, patterns }) => {
 
   (async () => {
     let isInitial = true;
-    let needsNewWatcher = false;
-    while (isActive) {
+    const scan = async () => {
+      /** @type {Set<string>} */
+      const changedPaths = new Set();
       const unseenPaths = new Set(mtimes.keys());
       for (const pattern of patterns) {
         const dirents = await Array.fromAsync(
           glob(pattern, { withFileTypes: true })
         );
-        if (!isInitial) await setTimeout();
         if (!isActive) return;
 
         for (const dirent of dirents) {
@@ -91,36 +105,33 @@ export const watch = ({ onChange, patterns }) => {
 
           const path = resolve(dirent.parentPath, dirent.name);
           unseenPaths.delete(path);
-          if ((await didChange(path)) && !isInitial) {
-            changedPaths.add(path);
-            needsNewWatcher = true;
-          }
-          if (!isInitial) await setTimeout();
+          if (await didChange(path)) changedPaths.add(path);
           if (!isActive) return;
         }
       }
-      isInitial = false;
 
       for (const path of unseenPaths) {
-        if (await didChange(path)) {
-          changedPaths.add(path);
-          needsNewWatcher = true;
-        }
-        await setTimeout();
+        if (await didChange(path)) changedPaths.add(path);
         if (!isActive) return;
       }
 
-      if (needsNewWatcher) {
-        flushChanges();
-        needsNewWatcher = false;
+      if (changedPaths.size && !isInitial) {
+        flush(changedPaths);
         watcher.close();
         watcher = createWatcher();
       }
-    }
+
+      isInitial = false;
+      scanTimeout = setTimeout(scan, scanDelay);
+    };
+
+    scan();
   })();
 
   return () => {
     isActive = false;
+    clearTimeout(flushTimeout);
+    clearTimeout(scanTimeout);
     watcher.close();
   };
 };
