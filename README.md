@@ -96,6 +96,7 @@ As of `0.9.0` watchy exposes a Node.js API.
 import { watch } from 'watchy';
 
 watch({
+  debounce: 0.5,
   onChange: paths => console.log(paths),
   patterns: ['js/**/*.js', 'css/**/*.css'],
 });

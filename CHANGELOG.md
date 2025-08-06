@@ -1,5 +1,8 @@
 # Changelog
 
+# 0.12.3
+- `debounce` option added to `watch`
+
 # 0.12.0
 - A file poller was added to pick up file changes that may have been missed by
   file system events. This adds a small CPU overhead but means changed files

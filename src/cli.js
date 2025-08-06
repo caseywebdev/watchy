@@ -101,21 +101,6 @@ const log = (type, message) => {
 
 const { clearTimeout, setTimeout } = globalThis;
 
-/**
- * @template {(...args: any[]) => any} T
- * @param {T} cb
- * @param {number} delay
- * @returns {(...args: Parameters<T>) => void}
- */
-const debounceFn = (cb, delay) => {
-  /** @type {ReturnType<typeof setTimeout>} */
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => cb(...args), delay * 1000);
-  };
-};
-
 if (!command) {
   console.error(program.helpInformation());
   log('error', 'Please specify a command.');
@@ -201,10 +186,7 @@ const shutdown = () => {
 
 if (patterns) {
   try {
-    closeWatcher = watch({
-      onChange: debounce ? debounceFn(run, debounce) : run,
-      patterns
-    });
+    closeWatcher = watch({ debounce, onChange: run, patterns });
   } catch (er) {
     handleError(/** @type {Error} */ (er));
     process.exit(1);

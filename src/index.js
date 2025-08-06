@@ -4,7 +4,6 @@ import { dirname, join, matchesGlob, relative, resolve } from 'node:path';
 
 const { clearTimeout, setTimeout } = globalThis;
 
-const flushDelay = 100;
 const scanDelay = 5000;
 
 /** @param {string[]} patterns */
@@ -22,8 +21,14 @@ const getCommonDir = patterns => {
   return dir;
 };
 
-/** @param {{ onChange: (paths: string[]) => void; patterns: string[] }} options */
-export const watch = ({ onChange, patterns }) => {
+/**
+ * @param {{
+ *   debounce?: number;
+ *   onChange: (paths: string[]) => void;
+ *   patterns: string[];
+ * }} options
+ */
+export const watch = ({ debounce = 0.1, onChange, patterns }) => {
   if (!patterns.length) return () => {};
 
   let isActive = true;
@@ -71,7 +76,7 @@ export const watch = ({ onChange, patterns }) => {
       const sorted = [...changedPaths].map(path => relative('.', path)).sort();
       changedPaths.clear();
       onChange(sorted);
-    }, flushDelay);
+    }, debounce * 1000);
   };
 
   const createWatcher = () =>
