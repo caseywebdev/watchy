@@ -23,7 +23,7 @@
     "commander": "14"
   },
   "devDependencies": {
-    "@types/node": "24",
+    "@types/node": "25",
     "eslint": "9",
     "eslint-config-coderiety": "2",
     "typescript": "5"
