@@ -10,4 +10,5 @@ git commit -am "Release $version"
 git tag -m $version $version
 git push
 git push --tags
+npm login
 npm publish

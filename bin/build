@@ -3,16 +3,14 @@
 #!/bin/sh -e
 
 node_modules/.bin/tsc \
-  --allowJs \
   --checkJs \
   --declaration \
   --emitDeclarationOnly \
-  --module NodeNext \
-  --moduleResolution NodeNext \
+  --ignoreConfig \
+  --lib ESNext \
   --outDir types \
   --rootDir src \
-  --strict \
-  --target ESNext \
+  --types node \
   src/index.js
 
 node_modules/.bin/eslint --fix

@@ -3,17 +3,15 @@
 /** @import {ChildProcess} from 'node:child_process' */
 
 import { spawn } from 'node:child_process';
-import fs from 'node:fs';
-
-import chalk from 'chalk';
-import { program } from 'commander';
+import { readFile } from 'node:fs/promises';
+import { parseArgs, styleText } from 'node:util';
 
 import { watch } from './index.js';
 
-const { console, process, URL } = globalThis;
+const { clearTimeout, console, process, setTimeout, URL } = globalThis;
 
 const packagePath = new URL('../package.json', import.meta.url);
-const { version } = JSON.parse(fs.readFileSync(packagePath).toString());
+const { version } = JSON.parse((await readFile(packagePath)).toString());
 
 const { env } = process;
 
@@ -21,187 +19,242 @@ const { env } = process;
 const getRunLabel = args =>
   args.map(arg => (/\s/.test(arg) ? JSON.stringify(arg) : arg)).join(' ');
 
-program
-  .name('watchy')
-  .version(version)
-  .usage('[options] -- <command> [args...]')
-  .description('Run commands when paths change.')
-  .option(
-    '-d, --debounce [seconds]',
-    'trigger a change at most every [seconds] seconds',
-    parseFloat
-  )
-  .option('-k, --keep-alive', 'restart the process if it exits')
-  .option(
-    '-r, --restart [string]',
-    'send [string] to STDIN to restart the process'
-  )
-  .option(
-    '-R, --no-restart-after-signal',
-    'disable process restart after being signaled and exited'
-  )
-  .option('-s, --silent', 'only output errors')
-  .option('-S, --no-init-spawn', 'prevent spawn when the watcher is created')
-  .option(
-    '-t, --shutdown-signal [signal]',
-    'use [signal] to shut down the process',
-    'SIGTERM'
-  )
-  .option(
-    '-T, --reload-signal [signal]',
-    'use [signal] to reload the process (defaults to shutdown signal)'
-  )
-  .option(
-    '-w, --watch [pattern]',
-    'watch [pattern] for changes, can be specified multiple times',
-    (path, paths = []) => [...paths, path]
-  )
-  .option(
-    '-W, --wait [seconds]',
-    "send SIGKILL to the process after [seconds] if it hasn't exited",
-    parseFloat
-  )
-  .arguments('<command> [args...]')
-  .parse(process.argv);
-
-const [command, ...args] = program.args;
-
-let {
-  debounce,
-  initSpawn,
-  keepAlive,
-  reloadSignal,
-  restart,
-  restartAfterSignal,
-  shutdownSignal,
-  silent: onlyErrors,
-  upgradeSignal,
-  wait,
-  watch: patterns
-} = program.opts();
-
-const { green, red } = chalk;
-const colors = {
-  error: red,
-  /** @param {string} str */
-  info: str => str,
-  success: green
-};
-
-/**
- * @param {'error' | 'info' | 'success'} type
- * @param {string} message
- */
-const log = (type, message) => {
-  if (onlyErrors && type !== 'error') return;
-
-  message = colors[type](`[${type}] ${message}`);
-  console[type === 'error' ? 'error' : 'log'](message);
-};
-
-const { clearTimeout, setTimeout } = globalThis;
-
-if (!command) {
-  console.error(program.helpInformation());
-  log('error', 'Please specify a command.');
-  process.exit(1);
-}
-
-const runLabel = getRunLabel([command, ...args]);
-/** @type {ChildProcess | undefined} */
-let child;
-/** @type {NodeJS.Timeout | undefined} */
-let sigkillTimeoutId;
-let state = 'dead';
-/** @type {ReturnType<typeof watch>} */
-let closeWatcher;
-
-/** @param {Error} er */
-const handleError = er => log('error', er.message);
-
-/**
- * @param {number} code
- * @param {NodeJS.Signals | undefined} signal
- */
-const handleClose = (code, signal) => {
-  child = undefined;
-  if (signal) {
-    log(signal === shutdownSignal ? 'info' : 'error', `Killed with ${signal}`);
+const options = /** @type {const} */ ({
+  debounce: {
+    description: 'Trigger a change at most every [seconds] seconds',
+    type: 'string',
+    short: 'd'
+  },
+  help: { description: 'Show usage details', type: 'boolean', short: 'h' },
+  'init-spawn': {
+    description: 'Run the process on start',
+    type: 'boolean',
+    short: 'i',
+    default: true
+  },
+  'keep-alive': {
+    description: 'Restart the process if it exits',
+    type: 'boolean',
+    short: 'k',
+    default: false
+  },
+  'reload-signal': {
+    description:
+      'Use [signal] to reload the process (defaults to shutdown signal)',
+    type: 'string',
+    short: 'T'
+  },
+  restart: {
+    description: 'Send [string] to STDIN to restart the process',
+    type: 'string',
+    short: 'r'
+  },
+  'restart-after-signal': {
+    description: 'Restart the process after being signaled and exited',
+    type: 'boolean',
+    default: true,
+    short: 'R'
+  },
+  'shutdown-signal': {
+    description: 'Use [signal] to shut down the process',
+    type: 'string',
+    short: 't',
+    default: 'SIGTERM'
+  },
+  silent: { description: 'Only output errors', type: 'boolean', short: 's' },
+  version: { description: 'Show version', type: 'boolean', short: 'v' },
+  wait: {
+    description:
+      "Send SIGKILL to the process after [seconds] if it hasn't exited",
+    type: 'string',
+    short: 'W'
+  },
+  watch: {
+    description: 'Watch [pattern] for changes, can be specified multiple times',
+    type: 'string',
+    short: 'w',
+    default: /** @type {string[]} */ ([]),
+    multiple: true
   }
-  if (code === 0) log('success', 'Exited cleanly');
-  if (code > 0) log('error', `Exited with code ${code}`);
-  const rerun = (state !== 'unsignaled' && restartAfterSignal) || keepAlive;
-  state = 'dead';
-  if (rerun) run();
+});
+
+/** @param {string} [errorMessage] */
+const showHelp = errorMessage => {
+  const maxKeyLength = Object.keys(options).reduce(
+    (max, key) => Math.max(key.length, max),
+    0
+  );
+
+  console[errorMessage ? 'error' : 'log'](
+    `${errorMessage ? `${errorMessage}\n\n` : ''}Run commands when paths change
+
+watchy [options] -- command arg1 arg2
+
+${Object.entries(options)
+  .map(
+    ([key, { short, description }]) =>
+      `--${key.padEnd(maxKeyLength)} -${short} ${description}`
+  )
+  .join('\n')}`
+  );
+  process.exit(errorMessage ? 1 : 0);
 };
 
-/** @param {string[] | undefined} [paths] */
-const run = (paths = []) => {
-  if (state !== 'dead') {
-    if (state === 'unsignaled' || upgradeSignal) kill();
-    return;
-  }
+(() => {
+  let positionals;
+  let values;
 
-  log('info', runLabel);
-  state = 'unsignaled';
-  child = spawn(command, args, {
-    env: { WATCHY_PATHS: paths.join(','), ...env },
-    stdio: ['ignore', 1, 2]
-  })
-    .on('error', handleError)
-    .on('close', handleClose);
-};
-
-/** @param {boolean} [terminate] */
-const kill = (terminate = false) => {
-  if (state === 'dead' || state === 'terminating') return;
-
-  if (!terminate) terminate = !reloadSignal;
-
-  if (terminate && state === 'unsignaled' && wait) {
-    sigkillTimeoutId = setTimeout(sigkill, wait * 1000);
-    child?.once('close', () => clearTimeout(sigkillTimeoutId));
-  }
-
-  const signal = terminate ? shutdownSignal : reloadSignal;
-  log('info', `Sending ${signal}...`);
-  state = terminate ? 'terminating' : 'reloading';
-  child?.kill(signal);
-};
-
-const sigkill = () => {
-  log('error', `Failed to kill with ${shutdownSignal} after ${wait} seconds`);
-  child?.kill('SIGKILL');
-};
-
-const shutdown = () => {
-  process.stdin.pause();
-  if (closeWatcher) closeWatcher();
-  keepAlive = false;
-  restartAfterSignal = false;
-  kill(true);
-  if (child) child.once('close', () => process.exit());
-  else process.exit();
-};
-
-if (patterns) {
   try {
-    closeWatcher = watch({ debounce, onChange: run, patterns });
+    ({ positionals, values } = parseArgs({
+      allowNegative: true,
+      allowPositionals: true,
+      options,
+      strict: true
+    }));
   } catch (er) {
-    handleError(/** @type {Error} */ (er));
-    process.exit(1);
+    return showHelp(er instanceof Error ? er.message : 'Unknown Error');
   }
-}
 
-if (restart) {
-  process.stdin.setEncoding('utf8');
-  process.stdin.resume();
-  process.stdin.on('data', data => {
-    if (data.toString().trim() === restart) run();
-  });
-}
+  const [command, ...args] = positionals;
 
-if (initSpawn) run();
+  if (values.help) return showHelp();
 
-process.once('SIGTERM', shutdown);
-process.once('SIGINT', shutdown);
+  if (values.version) {
+    console.log(version);
+    process.exit();
+  }
+
+  let {
+    'init-spawn': initSpawn,
+    'keep-alive': keepAlive,
+    'shutdown-signal': shutdownSignal,
+    'reload-signal': reloadSignal = shutdownSignal,
+    'restart-after-signal': restartAfterSignal,
+    debounce: _debounce,
+    restart,
+    silent: onlyErrors,
+    wait: _wait,
+    watch: patterns
+  } = values;
+
+  const debounce = _debounce ? parseFloat(_debounce) : undefined;
+  const wait = _wait ? parseFloat(_wait) : undefined;
+
+  /**
+   * @param {'error' | 'info' | 'success'} type
+   * @param {string} message
+   */
+  const log = (type, message) => {
+    if (onlyErrors && type !== 'error') return;
+
+    message = styleText(
+      type === 'error' ? 'red' : type === 'success' ? 'green' : [],
+      `[${type}] ${message}`
+    );
+    console[type === 'error' ? 'error' : 'log'](message);
+  };
+
+  if (!command) return showHelp('Please specify a command.');
+
+  const runLabel = getRunLabel([command, ...args]);
+  /** @type {ChildProcess | undefined} */
+  let child;
+  /** @type {NodeJS.Timeout | undefined} */
+  let sigkillTimeoutId;
+  let state = 'dead';
+  /** @type {ReturnType<typeof watch>} */
+  let closeWatcher;
+
+  /** @param {Error} er */
+  const handleError = er => log('error', er.message);
+
+  /**
+   * @param {number} code
+   * @param {NodeJS.Signals | undefined} signal
+   */
+  const handleClose = (code, signal) => {
+    child = undefined;
+    if (signal) {
+      log(
+        signal === shutdownSignal ? 'info' : 'error',
+        `Killed with ${signal}`
+      );
+    }
+    if (code === 0) log('success', 'Exited cleanly');
+    if (code > 0) log('error', `Exited with code ${code}`);
+    const rerun = (state !== 'unsignaled' && restartAfterSignal) || keepAlive;
+    state = 'dead';
+    if (rerun) run();
+  };
+
+  /** @param {string[] | undefined} [paths] */
+  const run = (paths = []) => {
+    if (state !== 'dead') {
+      if (state === 'unsignaled') kill();
+      return;
+    }
+
+    log('info', runLabel);
+    state = 'unsignaled';
+    child = spawn(command, args, {
+      env: { WATCHY_PATHS: paths.join(','), ...env },
+      stdio: ['ignore', 1, 2]
+    })
+      .on('error', handleError)
+      .on('close', handleClose);
+  };
+
+  /** @param {boolean} [terminate] */
+  const kill = (terminate = false) => {
+    if (state === 'dead' || state === 'terminating') return;
+
+    if (!terminate) terminate = !reloadSignal;
+
+    if (terminate && state === 'unsignaled' && wait) {
+      sigkillTimeoutId = setTimeout(sigkill, wait * 1000);
+      child?.once('close', () => clearTimeout(sigkillTimeoutId));
+    }
+
+    const signal = terminate ? shutdownSignal : reloadSignal;
+    log('info', `Sending ${signal}...`);
+    state = terminate ? 'terminating' : 'reloading';
+    child?.kill(/** @type {NodeJS.Signals} */ (signal));
+  };
+
+  const sigkill = () => {
+    log('error', `Failed to kill with ${shutdownSignal} after ${wait} seconds`);
+    child?.kill('SIGKILL');
+  };
+
+  const shutdown = () => {
+    process.stdin.pause();
+    if (closeWatcher) closeWatcher();
+    keepAlive = false;
+    restartAfterSignal = false;
+    kill(true);
+    if (child) child.once('close', () => process.exit());
+    else process.exit();
+  };
+
+  if (patterns) {
+    try {
+      closeWatcher = watch({ debounce, onChange: run, patterns });
+    } catch (er) {
+      handleError(/** @type {Error} */ (er));
+      process.exit(1);
+    }
+  }
+
+  if (restart) {
+    process.stdin.setEncoding('utf8');
+    process.stdin.resume();
+    process.stdin.on('data', data => {
+      if (data.toString().trim() === restart) run();
+    });
+  }
+
+  if (initSpawn) run();
+
+  process.once('SIGTERM', shutdown);
+  process.once('SIGINT', shutdown);
+})();

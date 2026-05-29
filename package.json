@@ -1,7 +1,7 @@
 {
   "name": "watchy",
   "type": "module",
-  "version": "0.12.3",
+  "version": "0.12.4",
   "author": "Casey Foster <c@sey.me>",
   "license": "MIT",
   "main": "src/index.js",
@@ -18,15 +18,11 @@
       "default": "./src/index.js"
     }
   },
-  "dependencies": {
-    "chalk": "5",
-    "commander": "14"
-  },
   "devDependencies": {
     "@types/node": "25",
-    "eslint": "9",
+    "eslint": "10",
     "eslint-config-coderiety": "2",
-    "typescript": "5"
+    "typescript": "6"
   },
   "files": [
     "/src",
