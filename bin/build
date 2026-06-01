@@ -1,7 +1,5 @@
 #!/bin/sh -e
 
-#!/bin/sh -e
-
 node_modules/.bin/tsc \
   --checkJs \
   --declaration \
